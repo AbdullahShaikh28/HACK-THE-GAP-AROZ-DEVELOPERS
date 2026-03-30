@@ -63,17 +63,32 @@ const DEFAULT_ZOOM = 12;
 function FitBounds({ tanks }: { tanks: WaterTank[] }) {
   const map = useMap();
   useEffect(() => {
-    const pts = tanks.filter((t) => isValidCoord(t.latitude, t.longitude));
-    if (pts.length === 0) {
-      map.setView(DEFAULT_CENTER, DEFAULT_ZOOM);
-      return;
-    }
-    if (pts.length === 1) {
-      map.setView([pts[0]!.latitude, pts[0]!.longitude], 14);
-      return;
-    }
-    const bounds = L.latLngBounds(pts.map((t) => [t.latitude, t.longitude] as [number, number]));
-    map.fitBounds(bounds, { padding: [48, 48], maxZoom: 14 });
+    let cancelled = false;
+    const run = () => {
+      if (cancelled) return;
+      try {
+        if (!map.getContainer()?.isConnected) return;
+        const pts = tanks.filter((t) => isValidCoord(t.latitude, t.longitude));
+        if (pts.length === 0) {
+          map.setView(DEFAULT_CENTER, DEFAULT_ZOOM);
+          return;
+        }
+        if (pts.length === 1) {
+          map.setView([pts[0]!.latitude, pts[0]!.longitude], 14);
+          return;
+        }
+        const bounds = L.latLngBounds(pts.map((t) => [t.latitude, t.longitude] as [number, number]));
+        map.fitBounds(bounds, { padding: [48, 48], maxZoom: 14 });
+      } catch {
+        /* map container may be null during unmount / layout */
+      }
+    };
+    map.whenReady(run);
+    const t = window.setTimeout(run, 0);
+    return () => {
+      cancelled = true;
+      clearTimeout(t);
+    };
   }, [map, tanks]);
   return null;
 }
@@ -98,44 +113,111 @@ function HeatLayer({ points }: { points: [number, number, number][] }) {
   const map = useMap();
   useEffect(() => {
     if (points.length === 0) return;
-    const Lheat = L as unknown as {
-      heatLayer: (p: typeof points, o: Record<string, unknown>) => HeatLayerInstance;
-    };
-    const { radius, blur } = heatSizeForZoom(map.getZoom());
-    const heat = Lheat.heatLayer(points, {
-      radius,
-      blur,
-      minOpacity: 0.22,
-      max: 0.95,
-      gradient: {
-        0.2: "#1a237e",
-        0.4: "#2e7d32",
-        0.55: "#f9a825",
-        0.75: "#ef6c00",
-        0.9: "#c62828",
-        1.0: "#b71c1c",
-      },
-    });
+
+    let heat: HeatLayerInstance | null = null;
+    let cancelled = false;
 
     const syncHeatToZoom = () => {
-      const next = heatSizeForZoom(map.getZoom());
-      heat.setOptions({
-        radius: next.radius,
-        blur: next.blur,
-      });
+      if (cancelled || !heat) return;
+      try {
+        if (!map.getContainer()?.isConnected) return;
+        const next = heatSizeForZoom(map.getZoom());
+        heat.setOptions({
+          radius: next.radius,
+          blur: next.blur,
+        });
+      } catch {
+        /* getZoom / getSize can throw if map pane is gone */
+      }
     };
 
-    heat.addTo(map);
-    syncHeatToZoom();
-    map.on("zoomend", syncHeatToZoom);
-    map.on("zoom", syncHeatToZoom);
+    let attached = false;
+    const attach = () => {
+      if (cancelled || attached) return;
+      try {
+        if (!map.getContainer()?.isConnected) return;
+        map.getZoom();
+
+        const Lheat = L as unknown as {
+          heatLayer: (p: typeof points, o: Record<string, unknown>) => HeatLayerInstance;
+        };
+        const { radius, blur } = heatSizeForZoom(map.getZoom());
+        heat = Lheat.heatLayer(points, {
+          radius,
+          blur,
+          minOpacity: 0.22,
+          max: 0.95,
+          gradient: {
+            0.2: "#1a237e",
+            0.4: "#2e7d32",
+            0.55: "#f9a825",
+            0.75: "#ef6c00",
+            0.9: "#c62828",
+            1.0: "#b71c1c",
+          },
+        });
+
+        heat.addTo(map);
+        attached = true;
+        syncHeatToZoom();
+        map.on("zoomend", syncHeatToZoom);
+        map.on("zoom", syncHeatToZoom);
+      } catch {
+        /* leaflet.heat / getSize during zero-size or teardown */
+      }
+    };
+
+    map.whenReady(() => {
+      requestAnimationFrame(() => {
+        requestAnimationFrame(attach);
+      });
+    });
 
     return () => {
+      cancelled = true;
       map.off("zoomend", syncHeatToZoom);
       map.off("zoom", syncHeatToZoom);
-      map.removeLayer(heat);
+      if (heat) {
+        try {
+          map.removeLayer(heat);
+        } catch {
+          /* map may already be destroyed */
+        }
+        heat = null;
+      }
     };
   }, [map, points]);
+  return null;
+}
+
+/** Ensures the map recalculates size after layout (sidebar, flex, dynamic import). */
+function InvalidateMapSize() {
+  const map = useMap();
+  useEffect(() => {
+    const id = window.setTimeout(() => {
+      try {
+        map.invalidateSize();
+      } catch {
+        /* ignore */
+      }
+    }, 0);
+    return () => clearTimeout(id);
+  }, [map]);
+
+  useEffect(() => {
+    const el = map.getContainer();
+    if (!el || typeof ResizeObserver === "undefined") return;
+    const ro = new ResizeObserver(() => {
+      try {
+        map.invalidateSize();
+      } catch {
+        /* ignore */
+      }
+    });
+    ro.observe(el);
+    return () => ro.disconnect();
+  }, [map]);
+
   return null;
 }
 
@@ -195,6 +277,7 @@ export function TanksMapHeatmap({ tanks }: TanksMapHeatmapProps) {
           scrollWheelZoom
           style={{ minHeight: "100%" }}
         >
+          <InvalidateMapSize />
           <TileLayer
             attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>'
             url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
