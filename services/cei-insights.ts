@@ -4,6 +4,10 @@ export type TankInsight = {
   tankId: number;
   tankName: string;
   recommendedOpenTime: string;
+  /** ISO timestamp for the suggested valve open on the scheduled calendar day (local). */
+  scheduledOpenAt: string;
+  scheduledWeekday: string;
+  scheduledDateLabel: string;
   recommendedDurationMinutes: number;
   targetAreas: string[];
   riskFlags: string[];
@@ -13,6 +17,16 @@ export type TankInsight = {
 
 function toHourMinute(date: Date) {
   return `${String(date.getHours()).padStart(2, "0")}:${String(date.getMinutes()).padStart(2, "0")}`;
+}
+
+function formatInsightDateParts(date: Date) {
+  const scheduledWeekday = date.toLocaleDateString("en-US", { weekday: "long" });
+  const scheduledDateLabel = date.toLocaleDateString("en-US", {
+    year: "numeric",
+    month: "long",
+    day: "numeric",
+  });
+  return { scheduledWeekday, scheduledDateLabel };
 }
 
 export async function generateCeiInsightsForTank(tankId?: number | null) {
@@ -67,10 +81,15 @@ export async function generateCeiInsightsForTank(tankId?: number | null) {
 
   const targetAreas = ((areas ?? []) as Array<any>).map((a) => a.area_name).slice(0, 4);
 
+  const { scheduledWeekday, scheduledDateLabel } = formatInsightDateParts(openTime);
+
   const insight: TankInsight = {
     tankId: tank.id,
     tankName: tank.name,
     recommendedOpenTime: toHourMinute(openTime),
+    scheduledOpenAt: openTime.toISOString(),
+    scheduledWeekday,
+    scheduledDateLabel,
     recommendedDurationMinutes: recommendedDuration,
     targetAreas,
     riskFlags,

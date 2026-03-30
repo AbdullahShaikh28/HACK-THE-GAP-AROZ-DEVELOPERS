@@ -1,6 +1,25 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useTransition } from "react";
+import { useRouter } from "next/navigation";
+
+import { Button } from "@/components/ui/button";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
 
 type ComplaintItem = {
   id: string;
@@ -16,21 +35,74 @@ type ComplaintItem = {
 
 type ComplaintsListProps = {
   complaints: ComplaintItem[];
-  tankNameById: Record<number, string>;
   updateComplaintMeta: (formData: FormData) => Promise<void>;
 };
 
+function statusLabel(status: ComplaintItem["status"]): string {
+  switch (status) {
+    case "open":
+      return "Open";
+    case "in_progress":
+      return "In Progress";
+    case "resolved":
+      return "Closed";
+    case "rejected":
+      return "Rejected";
+    default:
+      return status;
+  }
+}
+
+function priorityLabel(priority: ComplaintItem["priority"]): string {
+  switch (priority) {
+    case "low":
+      return "Low";
+    case "medium":
+      return "Medium";
+    case "high":
+      return "High";
+    default:
+      return priority;
+  }
+}
+
+const selectClass =
+  "h-10 w-full rounded-lg border border-input bg-background px-3 text-sm text-foreground outline-none focus-visible:border-ring focus-visible:ring-2 focus-visible:ring-ring/50";
+
 export function ComplaintsList({
   complaints,
-  tankNameById,
   updateComplaintMeta,
 }: ComplaintsListProps) {
-  const [previewUrl, setPreviewUrl] = useState<string | null>(null);
+  const router = useRouter();
+  const [isPending, startTransition] = useTransition();
+  const [dialogComplaint, setDialogComplaint] = useState<ComplaintItem | null>(
+    null,
+  );
+  const [editStatus, setEditStatus] = useState<ComplaintItem["status"]>("open");
+  const [editPriority, setEditPriority] =
+    useState<ComplaintItem["priority"]>("medium");
 
-  function formatCreatedAt(value: string) {
-    const date = new Date(value);
-    if (Number.isNaN(date.getTime())) return value;
-    return `${date.toISOString().slice(0, 19).replace("T", " ")} UTC`;
+  function openDialog(c: ComplaintItem) {
+    setDialogComplaint(c);
+    setEditStatus(c.status);
+    setEditPriority(c.priority);
+  }
+
+  function closeDialog() {
+    setDialogComplaint(null);
+  }
+
+  function handleSave() {
+    if (!dialogComplaint) return;
+    startTransition(async () => {
+      const fd = new FormData();
+      fd.set("complaint_id", dialogComplaint.id);
+      fd.set("status", editStatus);
+      fd.set("priority", editPriority);
+      await updateComplaintMeta(fd);
+      router.refresh();
+      closeDialog();
+    });
   }
 
   if (complaints.length === 0) {
@@ -39,103 +111,121 @@ export function ComplaintsList({
 
   return (
     <>
-      <div className="space-y-4">
-        {complaints.map((complaint) => (
-          <div
-            key={complaint.id}
-            className="rounded-lg border border-border bg-background p-4"
-          >
-            <div className="flex flex-wrap items-start justify-between gap-3">
-              <div>
-                <p className="text-sm font-semibold text-foreground">
-                  {complaint.name} - {complaint.phone_number}
-                </p>
-                <p className="text-xs text-muted">
-                  Tank: {tankNameById[complaint.tank_id] ?? `#${complaint.tank_id}`}
-                </p>
-              </div>
-              <p className="text-xs text-muted">
-                {formatCreatedAt(complaint.created_at)}
-              </p>
-            </div>
-
-            <p className="mt-2 text-sm text-foreground">{complaint.issue}</p>
-            {complaint.image_url ? (
-              <button
-                type="button"
-                onClick={() => setPreviewUrl(complaint.image_url)}
-                className="mt-3 overflow-hidden rounded-md border border-border"
-                title="Preview uploaded image"
-              >
-                <img
-                  src={complaint.image_url}
-                  alt="Complaint preview"
-                  className="h-20 w-28 object-cover"
-                />
-              </button>
-            ) : null}
-
-            <form action={updateComplaintMeta} className="mt-3 grid gap-3 md:grid-cols-4">
-              <input type="hidden" name="complaint_id" value={complaint.id} />
-
-              <div className="space-y-1">
-                <label className="text-xs font-medium text-foreground">Status</label>
-                <select
-                  name="status"
-                  defaultValue={complaint.status}
-                  className="h-10 w-full rounded-lg border border-border bg-background px-3 text-sm text-foreground outline-none"
-                >
-                  <option value="open">Open</option>
-                  <option value="in_progress">In Progress</option>
-                  <option value="resolved">Resolved</option>
-                  <option value="rejected">Rejected</option>
-                </select>
-              </div>
-
-              <div className="space-y-1">
-                <label className="text-xs font-medium text-foreground">Priority</label>
-                <select
-                  name="priority"
-                  defaultValue={complaint.priority ?? "medium"}
-                  className="h-10 w-full rounded-lg border border-border bg-background px-3 text-sm text-foreground outline-none"
-                >
-                  <option value="low">Low</option>
-                  <option value="medium">Medium</option>
-                  <option value="high">High</option>
-                </select>
-              </div>
-
-              <div className="flex items-end">
-                <button
-                  type="submit"
-                  className="h-10 rounded-lg bg-primary px-4 text-sm font-medium text-primary-foreground transition hover:opacity-90"
-                >
-                  Save
-                </button>
-              </div>
-            </form>
-          </div>
-        ))}
-      </div>
-
-      {previewUrl ? (
-        <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/70 p-4">
-          <div className="relative max-h-[90vh] w-full max-w-3xl rounded-xl bg-white p-3">
-            <button
-              type="button"
-              onClick={() => setPreviewUrl(null)}
-              className="absolute right-3 top-3 rounded-md bg-black/70 px-2 py-1 text-xs text-white"
+      <Table>
+        <TableHeader>
+          <TableRow>
+            <TableHead>Name</TableHead>
+            <TableHead>Number</TableHead>
+            <TableHead className="min-w-[12rem] max-w-md">Issue</TableHead>
+            <TableHead>Status</TableHead>
+            <TableHead>Priority</TableHead>
+          </TableRow>
+        </TableHeader>
+        <TableBody>
+          {complaints.map((complaint) => (
+            <TableRow
+              key={complaint.id}
+              className="cursor-pointer hover:bg-muted/40"
+              title="Click to update status and priority"
+              onClick={() => openDialog(complaint)}
             >
-              Close
-            </button>
-            <img
-              src={previewUrl}
-              alt="Complaint full preview"
-              className="max-h-[85vh] w-full rounded-md object-contain"
-            />
+              <TableCell className="font-medium">{complaint.name}</TableCell>
+              <TableCell className="tabular-nums text-muted-foreground">
+                {complaint.phone_number}
+              </TableCell>
+              <TableCell>
+                <span
+                  className="line-clamp-2 text-foreground"
+                  title={complaint.issue}
+                >
+                  {complaint.issue}
+                </span>
+              </TableCell>
+              <TableCell className="text-sm text-foreground">
+                {statusLabel(complaint.status)}
+              </TableCell>
+              <TableCell className="text-sm text-foreground">
+                {priorityLabel(complaint.priority)}
+              </TableCell>
+            </TableRow>
+          ))}
+        </TableBody>
+      </Table>
+
+      <Dialog
+        open={dialogComplaint !== null}
+        onOpenChange={(open) => {
+          if (!open) closeDialog();
+        }}
+      >
+        <DialogContent showCloseButton>
+          <DialogHeader>
+            <DialogTitle>Update complaint</DialogTitle>
+            <DialogDescription>
+              Change status and priority for{" "}
+              <span className="font-medium text-foreground">
+                {dialogComplaint?.name ?? ""}
+              </span>
+              .
+            </DialogDescription>
+          </DialogHeader>
+
+          <div className="grid gap-4 py-2">
+            <div className="grid gap-2">
+              <label htmlFor="complaint-status" className="text-sm font-medium">
+                Status
+              </label>
+              <select
+                id="complaint-status"
+                className={selectClass}
+                value={editStatus}
+                onChange={(e) =>
+                  setEditStatus(e.target.value as ComplaintItem["status"])
+                }
+              >
+                <option value="open">Open</option>
+                <option value="in_progress">In Progress</option>
+                <option value="resolved">Closed</option>
+                <option value="rejected">Rejected</option>
+              </select>
+            </div>
+            <div className="grid gap-2">
+              <label
+                htmlFor="complaint-priority"
+                className="text-sm font-medium"
+              >
+                Priority
+              </label>
+              <select
+                id="complaint-priority"
+                className={selectClass}
+                value={editPriority}
+                onChange={(e) =>
+                  setEditPriority(e.target.value as ComplaintItem["priority"])
+                }
+              >
+                <option value="low">Low</option>
+                <option value="medium">Medium</option>
+                <option value="high">High</option>
+              </select>
+            </div>
           </div>
-        </div>
-      ) : null}
+
+          <DialogFooter>
+            <Button
+              type="button"
+              variant="outline"
+              onClick={closeDialog}
+              disabled={isPending}
+            >
+              Cancel
+            </Button>
+            <Button type="button" onClick={handleSave} disabled={isPending}>
+              {isPending ? "Saving…" : "Save"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </>
   );
 }
