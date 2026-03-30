@@ -1,8 +1,15 @@
 "use client";
 
-import { FormEvent, useEffect, useMemo, useRef, useState } from "react";
-import { Button } from "@/components/ui/Button";
-import { Input } from "@/components/ui/Input";
+import {
+  type ChangeEvent,
+  FormEvent,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+} from "react";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
 import { Message } from "@/components/Message";
 import type { ChatApiMessage, ChatLanguage, ChatMessage } from "@/types";
 import { cn } from "@/utils/helpers";
@@ -322,7 +329,9 @@ export function ChatBox({
       >
         <Input
           value={input}
-          onChange={(event) => setInput(event.target.value)}
+          onChange={(event: ChangeEvent<HTMLInputElement>) =>
+            setInput(event.target.value)
+          }
           placeholder={copy.placeholder}
           disabled={isSubmitting}
           dir={selectedLanguage.dir}

@@ -1,8 +1,9 @@
 {
   "/page": "app/page.js",
-  "/(public)/chat/page": "app/(public)/chat/page.js",
   "/(auth)/login/page": "app/(auth)/login/page.js",
+  "/(public)/chat/page": "app/(public)/chat/page.js",
   "/(public)/tanks/page": "app/(public)/tanks/page.js",
   "/(protected)/dashboard/page": "app/(protected)/dashboard/page.js",
-  "/(protected)/dashboard/analytics/page": "app/(protected)/dashboard/analytics/page.js"
+  "/(protected)/dashboard/analytics/page": "app/(protected)/dashboard/analytics/page.js",
+  "/(protected)/dashboard/profile/page": "app/(protected)/dashboard/profile/page.js"
 }

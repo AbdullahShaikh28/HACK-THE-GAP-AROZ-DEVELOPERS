@@ -2,10 +2,11 @@
 
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
-import { type FormEvent, useState } from "react";
-import { Button } from "@/components/ui/Button";
+import type { ChangeEvent, FormEvent } from "react";
+import { useState } from "react";
+import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/Card";
-import { Input } from "@/components/ui/Input";
+import { Input } from "@/components/ui/input";
 import { createClient } from "@/lib/supabase/client";
 
 type AuthFormProps = {
@@ -98,7 +99,9 @@ export function AuthForm({ mode }: AuthFormProps) {
             id="email"
             type="email"
             value={email}
-            onChange={(event) => setEmail(event.target.value)}
+            onChange={(event: ChangeEvent<HTMLInputElement>) =>
+              setEmail(event.target.value)
+            }
             placeholder="you@example.com"
             required
           />
@@ -115,7 +118,9 @@ export function AuthForm({ mode }: AuthFormProps) {
             id="password"
             type="password"
             value={password}
-            onChange={(event) => setPassword(event.target.value)}
+            onChange={(event: ChangeEvent<HTMLInputElement>) =>
+              setPassword(event.target.value)
+            }
             placeholder="Minimum 6 characters"
             minLength={6}
             required
