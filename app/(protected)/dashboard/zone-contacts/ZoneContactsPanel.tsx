@@ -9,6 +9,7 @@ import {
   type AssignedTankSummary,
   type ZoneContactRow,
 } from "./actions";
+import { formatSupplySchedule } from "@/lib/supply-schedule-format";
 import { buildSchedulingInsightWhatsAppBody } from "@/lib/scheduling-whatsapp-message";
 import { getDummyZoneLabel } from "@/lib/dummy-zones";
 
@@ -77,6 +78,10 @@ export function ZoneContactsPanel({
   const previewBody =
     insight &&
     buildSchedulingInsightWhatsAppBody(insight, previewZone, new Date());
+
+  const insightSchedule = insight
+    ? formatSupplySchedule(insight.scheduledOpenAt, insight.recommendedDurationMinutes)
+    : null;
 
   return (
     <div className="flex flex-col gap-6">
@@ -193,11 +198,10 @@ export function ZoneContactsPanel({
         {insight ? (
           <div className="mt-4 space-y-3 text-sm">
             <p className="text-foreground">
-              <span className="font-semibold">{insight.tankName}</span>: open valve on{" "}
-              <span className="font-semibold">{insight.scheduledWeekday}</span>,{" "}
-              <span className="font-semibold">{insight.scheduledDateLabel}</span>, at{" "}
-              <span className="font-semibold">{insight.recommendedOpenTime}</span> for{" "}
-              <span className="font-semibold">{insight.recommendedDurationMinutes} minutes</span>.
+              <span className="font-semibold">{insight.tankName}</span>: open valve at{" "}
+              <span className="font-semibold">{insightSchedule?.startLabel}</span> for{" "}
+              <span className="font-semibold">{insight.recommendedDurationMinutes} minutes</span>{" "}
+              (supply ends at <span className="font-semibold">{insightSchedule?.endTimeLabel}</span>).
             </p>
             <p className="text-muted">{insight.reasoningSummary}</p>
             <p className="text-muted">

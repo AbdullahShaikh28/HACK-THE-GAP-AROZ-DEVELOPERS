@@ -11,6 +11,7 @@ import {
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Message } from "@/components/Message";
+import { FORM_LANGUAGE_OPTIONS as languageOptions } from "@/lib/form-language-options";
 import type { ChatApiMessage, ChatLanguage, ChatMessage } from "@/types";
 import { cn } from "@/utils/helpers";
 
@@ -21,18 +22,6 @@ const initialMessages: ChatMessage[] = [
     content:
       "I am your water management copilot. I can help only with water management, locations, and data available in this app or shared in the chat.",
   },
-];
-
-const languageOptions: Array<{
-  code: ChatLanguage;
-  label: string;
-  nativeLabel: string;
-  dir: "ltr" | "rtl";
-}> = [
-  { code: "en", label: "English", nativeLabel: "English", dir: "ltr" },
-  { code: "hi", label: "Hindi", nativeLabel: "हिन्दी", dir: "ltr" },
-  { code: "mr", label: "Marathi", nativeLabel: "मराठी", dir: "ltr" },
-  { code: "ur", label: "Urdu", nativeLabel: "اردو", dir: "rtl" },
 ];
 
 const contentByLanguage: Record<

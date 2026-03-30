@@ -2,7 +2,7 @@
 
 import Image from "next/image";
 import Link from "next/link";
-import { usePathname } from "next/navigation";
+import { usePathname, useSearchParams } from "next/navigation";
 import * as React from "react";
 import { createClient } from "@/lib/supabase/client";
 import {
@@ -134,6 +134,50 @@ function IconZoneContacts() {
         fill="none"
       />
       <circle cx="8" cy="5" r="0.9" fill="currentColor" />
+    </svg>
+  );
+}
+
+function IconSurvey() {
+  return (
+    <svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden>
+      <rect
+        x="2.5"
+        y="2"
+        width="11"
+        height="12"
+        rx="1.5"
+        stroke="currentColor"
+        strokeWidth="1.4"
+      />
+      <line x1="5" y1="5.5" x2="11" y2="5.5" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round" />
+      <line x1="5" y1="8" x2="11" y2="8" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round" />
+      <line x1="5" y1="10.5" x2="9" y2="10.5" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round" />
+    </svg>
+  );
+}
+
+function IconValve() {
+  return (
+    <svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden>
+      <path
+        d="M2 8h4M10 8h4M7 4v8"
+        stroke="currentColor"
+        strokeWidth="1.4"
+        strokeLinecap="round"
+      />
+      <rect
+        x="5"
+        y="5.5"
+        width="6"
+        height="5"
+        rx="1"
+        stroke="currentColor"
+        strokeWidth="1.4"
+        fill="none"
+      />
+      <circle cx="8" cy="2.5" r="1.2" stroke="currentColor" strokeWidth="1.2" fill="none" />
+      <path d="M8 3.7v1.8" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round" />
     </svg>
   );
 }
@@ -367,6 +411,7 @@ function ComplaintsCountBadge() {
 
 export function AppSidebar() {
   const pathname = usePathname();
+  const searchParams = useSearchParams();
   const email = useSidebarUser();
   const [analyticsOpen, setAnalyticsOpen] = React.useState(
     () =>
@@ -391,9 +436,14 @@ export function AppSidebar() {
   const zoneContactsActive =
     pathname === "/dashboard/zone-contacts" ||
     pathname.startsWith("/dashboard/zone-contacts/");
+  const surveyActive =
+    pathname === "/dashboard/survey" || pathname.startsWith("/dashboard/survey/");
+  const valveControlActive =
+    pathname === "/dashboard/valve-control" || pathname.startsWith("/dashboard/valve-control/");
   const analyticsActive =
     pathname === "/dashboard/analytics" ||
     pathname.startsWith("/dashboard/analytics/");
+  const analyticsTab = searchParams.get("tab");
 
   return (
     <Sidebar collapsible="icon" variant="default">
@@ -469,6 +519,36 @@ export function AppSidebar() {
               </SidebarMenuItem>
 
               <SidebarMenuItem>
+                <SidebarMenuButton
+                  asChild
+                  isActive={surveyActive}
+                  tooltip="Survey"
+                >
+                  <Link href="/dashboard/survey">
+                    <span className="ds-menu-icon">
+                      <IconSurvey />
+                    </span>
+                    <span className="ds-menu-label">Survey</span>
+                  </Link>
+                </SidebarMenuButton>
+              </SidebarMenuItem>
+
+              <SidebarMenuItem>
+                <SidebarMenuButton
+                  asChild
+                  isActive={valveControlActive}
+                  tooltip="AI valve control"
+                >
+                  <Link href="/dashboard/valve-control">
+                    <span className="ds-menu-icon">
+                      <IconValve />
+                    </span>
+                    <span className="ds-menu-label">AI valve control</span>
+                  </Link>
+                </SidebarMenuButton>
+              </SidebarMenuItem>
+
+              <SidebarMenuItem>
                 <SidebarMenuButton asChild isActive={mapActive} tooltip="Map View">
                   <Link href="/dashboard/map">
                     <span className="ds-menu-icon">
@@ -500,26 +580,46 @@ export function AppSidebar() {
                   <ul className="ds-sub-list">
                     <li>
                       <Link
-                        href="/dashboard/analytics"
-                        className={cnSubBtn(pathname === "/dashboard/analytics")}
+                        href="/dashboard/analytics?tab=tank-risk"
+                        className={cnSubBtn(
+                          pathname === "/dashboard/analytics" &&
+                            (!analyticsTab || analyticsTab === "tank-risk"),
+                        )}
                       >
-                        Capacity Trends
+                        Tank Risk
                       </Link>
                     </li>
                     <li>
                       <Link
-                        href="/dashboard/analytics"
-                        className={cnSubBtn(false)}
+                        href="/dashboard/analytics?tab=reliability"
+                        className={cnSubBtn(
+                          pathname === "/dashboard/analytics" &&
+                            analyticsTab === "reliability",
+                        )}
                       >
-                        Ward Coverage
+                        Reliability Trends
                       </Link>
                     </li>
                     <li>
                       <Link
-                        href="/dashboard/analytics"
-                        className={cnSubBtn(false)}
+                        href="/dashboard/analytics?tab=complaints"
+                        className={cnSubBtn(
+                          pathname === "/dashboard/analytics" &&
+                            analyticsTab === "complaints",
+                        )}
                       >
-                        ESR vs GSR
+                        Complaint Intelligence
+                      </Link>
+                    </li>
+                    <li>
+                      <Link
+                        href="/dashboard/analytics?tab=zones"
+                        className={cnSubBtn(
+                          pathname === "/dashboard/analytics" &&
+                            analyticsTab === "zones",
+                        )}
+                      >
+                        Zone Analytics
                       </Link>
                     </li>
                   </ul>

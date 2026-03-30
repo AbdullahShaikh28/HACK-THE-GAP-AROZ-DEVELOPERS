@@ -2,11 +2,13 @@ import Link from "next/link";
 import Image from "next/image";
 
 type FrontendHeaderProps = {
-  active?: "home" | "chat" | "tanks" | "complaints";
+  active?: "home" | "chat" | "tanks" | "complaints" | "supply_report";
 };
 
 export function FrontendHeader({ active }: FrontendHeaderProps) {
-  const linkClass = (key: "home" | "chat" | "tanks" | "complaints") =>
+  const linkClass = (
+    key: "home" | "chat" | "tanks" | "complaints" | "supply_report",
+  ) =>
     [
       "rounded-md px-3.5 py-2 font-semibold tracking-[0.3px] transition",
       active === key
@@ -25,6 +27,18 @@ export function FrontendHeader({ active }: FrontendHeaderProps) {
           </div>
         </div>
         <span>मराठी</span>
+      </div>
+
+      <div className="w-full border-b border-black/5 bg-white">
+        <Image
+          src="/images/main_logo.jpg"
+          alt="Aurangabad Smart City"
+          width={1352}
+          height={110}
+          className="block h-auto w-full"
+          priority
+          sizes="100vw"
+        />
       </div>
 
       <header className="sticky top-0 z-40 bg-[#1a3a6e] text-white shadow-[0_2px_12px_rgba(0,0,0,0.25)]">
@@ -64,6 +78,9 @@ export function FrontendHeader({ active }: FrontendHeaderProps) {
             </Link>
             <Link href="/complaints" className={linkClass("complaints")}>
               Complaint
+            </Link>
+            <Link href="/supply-report" className={linkClass("supply_report")}>
+              Supply report
             </Link>
             <Link
               href="/login"

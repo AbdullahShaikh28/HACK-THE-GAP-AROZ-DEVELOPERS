@@ -225,3 +225,23 @@ export function formatTankListLinesForLang(
     })
     .join("\n");
 }
+
+/**
+ * Single-line label for HTML selects (supply report, etc.).
+ * Strips the leading "N. " used in WhatsApp list lines. Falls back to DB name/ward.
+ */
+export function tankDropdownLabel(
+  tank: { id: number; name: string; ward: string | null },
+  lang: TankListLang,
+): string {
+  if (lang === "en") {
+    const ward = tank.ward?.trim();
+    return ward ? `${tank.name} (${ward})` : tank.name;
+  }
+  const loc = BY_ID[tank.id];
+  if (loc) {
+    return loc[lang].replace(/^\d+\.\s*/, "").trim();
+  }
+  const ward = tank.ward?.trim();
+  return ward ? `${tank.name} (${ward})` : tank.name;
+}

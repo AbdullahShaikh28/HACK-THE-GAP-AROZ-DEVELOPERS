@@ -12,31 +12,20 @@
       "static/css/app/(protected)/dashboard/layout.css",
       "static/chunks/app/(protected)/dashboard/layout.js"
     ],
-    "/(protected)/dashboard/page": [
-      "static/chunks/webpack.js",
-      "static/chunks/main-app.js",
-      "static/chunks/app/(protected)/dashboard/page.js"
-    ],
-    "/(public)/tanks/page": [
-      "static/chunks/webpack.js",
-      "static/chunks/main-app.js",
-      "static/css/app/(public)/tanks/page.css",
-      "static/chunks/app/(public)/tanks/page.js"
-    ],
     "/(protected)/dashboard/map/page": [
       "static/chunks/webpack.js",
       "static/chunks/main-app.js",
       "static/chunks/app/(protected)/dashboard/map/page.js"
     ],
-    "/(protected)/dashboard/assigned-tank/page": [
+    "/(protected)/dashboard/valve-control/page": [
       "static/chunks/webpack.js",
       "static/chunks/main-app.js",
-      "static/chunks/app/(protected)/dashboard/assigned-tank/page.js"
+      "static/chunks/app/(protected)/dashboard/valve-control/page.js"
     ],
-    "/(protected)/dashboard/zone-contacts/page": [
+    "/(protected)/dashboard/survey/page": [
       "static/chunks/webpack.js",
       "static/chunks/main-app.js",
-      "static/chunks/app/(protected)/dashboard/zone-contacts/page.js"
+      "static/chunks/app/(protected)/dashboard/survey/page.js"
     ]
   }
 }

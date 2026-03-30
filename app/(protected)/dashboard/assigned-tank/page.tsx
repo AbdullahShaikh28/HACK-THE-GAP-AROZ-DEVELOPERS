@@ -1,6 +1,7 @@
 import { Card } from "@/components/ui/Card";
 import { createClient } from "@/lib/supabase/server";
 import { revalidatePath } from "next/cache";
+import { formatSupplySchedule } from "@/lib/supply-schedule-format";
 import { generateCeiInsightsForTank } from "@/services/cei-insights";
 
 export default async function AssignedTankPage() {
@@ -78,6 +79,9 @@ export default async function AssignedTankPage() {
   const availableCapacity = Math.max(0, totalCapacity - usedCapacity);
 
   const aiInsight = await generateCeiInsightsForTank(profile?.tank_id ?? null);
+  const aiSchedule = aiInsight
+    ? formatSupplySchedule(aiInsight.scheduledOpenAt, aiInsight.recommendedDurationMinutes)
+    : null;
 
   return (
     <div className="flex flex-col gap-6">
@@ -158,14 +162,10 @@ export default async function AssignedTankPage() {
         {aiInsight ? (
           <div className="mt-4 space-y-3 text-sm">
             <p className="text-foreground">
-              <span className="font-semibold">{aiInsight.tankName}</span>: open valve on{" "}
-              <span className="font-semibold">{aiInsight.scheduledWeekday}</span>,{" "}
-              <span className="font-semibold">{aiInsight.scheduledDateLabel}</span>, at{" "}
-              <span className="font-semibold">{aiInsight.recommendedOpenTime}</span> for{" "}
-              <span className="font-semibold">
-                {aiInsight.recommendedDurationMinutes} minutes
-              </span>
-              .
+              <span className="font-semibold">{aiInsight.tankName}</span>: open valve at{" "}
+              <span className="font-semibold">{aiSchedule?.startLabel}</span> for{" "}
+              <span className="font-semibold">{aiInsight.recommendedDurationMinutes} minutes</span>{" "}
+              (supply ends at <span className="font-semibold">{aiSchedule?.endTimeLabel}</span>).
             </p>
             <p className="text-muted">{aiInsight.reasoningSummary}</p>
             <p className="text-muted">
