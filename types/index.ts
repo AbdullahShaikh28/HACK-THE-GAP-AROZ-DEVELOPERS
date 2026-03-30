@@ -180,7 +180,8 @@ export type Database = {
           tank_id: number;
           name: string | null;
           phone_number: string;
-          source: "complaint" | "profile" | "campaign_import";
+          source: "complaint" | "profile" | "campaign_import" | "survey";
+          zone_number: number | null;
           created_at: string;
         };
         Insert: {
@@ -188,7 +189,8 @@ export type Database = {
           tank_id: number;
           name?: string | null;
           phone_number: string;
-          source?: "complaint" | "profile" | "campaign_import";
+          source?: "complaint" | "profile" | "campaign_import" | "survey";
+          zone_number?: number | null;
           created_at?: string;
         };
         Update: {
@@ -196,7 +198,8 @@ export type Database = {
           tank_id?: number;
           name?: string | null;
           phone_number?: string;
-          source?: "complaint" | "profile" | "campaign_import";
+          source?: "complaint" | "profile" | "campaign_import" | "survey";
+          zone_number?: number | null;
           created_at?: string;
         };
         Relationships: [];

@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import twilio from "twilio";
 import { createClient } from "@/lib/supabase/server";
 import { getWhatsappOutboundMediaUrls } from "@/lib/whatsapp-outbound-media";
+import { toWhatsappAddress } from "@/lib/whatsapp-phone";
 
 type CampaignPayload = {
   tankId?: number;
@@ -51,9 +52,11 @@ export async function POST(request: Request) {
 
     let sentCount = 0;
     for (const phone of uniquePhones) {
+      const to = toWhatsappAddress(phone);
+      if (!to) continue;
       await client.messages.create({
         from: fromNumber,
-        to: phone,
+        to,
         body: fullMessage,
         ...(mediaUrl.length > 0 ? { mediaUrl } : {}),
       });

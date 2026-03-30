@@ -158,7 +158,9 @@ export default async function AssignedTankPage() {
         {aiInsight ? (
           <div className="mt-4 space-y-3 text-sm">
             <p className="text-foreground">
-              <span className="font-semibold">{aiInsight.tankName}</span>: open valve at{" "}
+              <span className="font-semibold">{aiInsight.tankName}</span>: open valve on{" "}
+              <span className="font-semibold">{aiInsight.scheduledWeekday}</span>,{" "}
+              <span className="font-semibold">{aiInsight.scheduledDateLabel}</span>, at{" "}
               <span className="font-semibold">{aiInsight.recommendedOpenTime}</span> for{" "}
               <span className="font-semibold">
                 {aiInsight.recommendedDurationMinutes} minutes

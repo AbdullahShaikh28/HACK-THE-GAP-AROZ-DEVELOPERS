@@ -52,3 +52,9 @@ textarea {
 .animate-chat-bounce {
   animation: chat-bounce 1s infinite ease-in-out;
 }
+
+/* Tank heatmap pins (Leaflet divIcon) — no default grey box */
+.leaflet-div-icon.tank-stress-marker {
+  background: transparent !important;
+  border: none !important;
+}

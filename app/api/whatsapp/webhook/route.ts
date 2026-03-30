@@ -11,16 +11,7 @@ import {
   type WhatsAppLang,
 } from "@/lib/whatsapp-i18n";
 import { getWhatsappOutboundMediaUrls } from "@/lib/whatsapp-outbound-media";
-
-function normalizePhone(phone: string) {
-  return phone.replace(/[^\d+]/g, "").trim();
-}
-
-function toWhatsappAddress(phone: string) {
-  const normalized = normalizePhone(phone);
-  if (!normalized) return "";
-  return normalized.startsWith("whatsapp:") ? normalized : `whatsapp:${normalized}`;
-}
+import { normalizePhone, toWhatsappAddress } from "@/lib/whatsapp-phone";
 
 function inferTankIdFromBody(body: string) {
   const match = body.match(/tank[\s:#-]*(\d+)/i);

@@ -2,7 +2,7 @@
 
 import Image from "next/image";
 import Link from "next/link";
-import { usePathname, useSearchParams } from "next/navigation";
+import { usePathname } from "next/navigation";
 import * as React from "react";
 import { createClient } from "@/lib/supabase/client";
 import {
@@ -109,6 +109,31 @@ function IconTanks() {
         strokeWidth="1"
         strokeDasharray="1.5 1.5"
       />
+    </svg>
+  );
+}
+
+function IconZoneContacts() {
+  return (
+    <svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden>
+      <rect
+        x="2"
+        y="3"
+        width="12"
+        height="9"
+        rx="1"
+        stroke="currentColor"
+        strokeWidth="1.4"
+      />
+      <path
+        d="M5 6.5 L8 8.5 L11 6.5"
+        stroke="currentColor"
+        strokeWidth="1.2"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+        fill="none"
+      />
+      <circle cx="8" cy="5" r="0.9" fill="currentColor" />
     </svg>
   );
 }
@@ -342,7 +367,6 @@ function ComplaintsCountBadge() {
 
 export function AppSidebar() {
   const pathname = usePathname();
-  const searchParams = useSearchParams();
   const email = useSidebarUser();
   const [analyticsOpen, setAnalyticsOpen] = React.useState(
     () =>
@@ -355,17 +379,18 @@ export function AppSidebar() {
     }
   }, [pathname]);
 
-  const mapView = searchParams.get("view") === "map";
-  const onPublicTanksPath = pathname === "/tanks";
-
   const dashboardActive = pathname === "/dashboard";
   const assignedTankActive =
     pathname === "/dashboard/assigned-tank" ||
     pathname.startsWith("/dashboard/assigned-tank/");
-  const mapActive = onPublicTanksPath && mapView;
+  const mapActive =
+    pathname === "/dashboard/map" || pathname.startsWith("/dashboard/map/");
   const complaintsActive =
     pathname === "/dashboard/complaints" ||
     pathname.startsWith("/dashboard/complaints/");
+  const zoneContactsActive =
+    pathname === "/dashboard/zone-contacts" ||
+    pathname.startsWith("/dashboard/zone-contacts/");
   const analyticsActive =
     pathname === "/dashboard/analytics" ||
     pathname.startsWith("/dashboard/analytics/");
@@ -429,8 +454,23 @@ export function AppSidebar() {
               </SidebarMenuItem>
 
               <SidebarMenuItem>
+                <SidebarMenuButton
+                  asChild
+                  isActive={zoneContactsActive}
+                  tooltip="Zone contacts"
+                >
+                  <Link href="/dashboard/zone-contacts">
+                    <span className="ds-menu-icon">
+                      <IconZoneContacts />
+                    </span>
+                    <span className="ds-menu-label">Zone contacts</span>
+                  </Link>
+                </SidebarMenuButton>
+              </SidebarMenuItem>
+
+              <SidebarMenuItem>
                 <SidebarMenuButton asChild isActive={mapActive} tooltip="Map View">
-                  <Link href="/tanks?view=map">
+                  <Link href="/dashboard/map">
                     <span className="ds-menu-icon">
                       <IconMap />
                     </span>
