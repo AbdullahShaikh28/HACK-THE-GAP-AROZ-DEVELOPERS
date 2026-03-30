@@ -8,7 +8,7 @@ export function FloatingChatWidget() {
   const [isOpen, setIsOpen] = useState(false);
 
   return (
-    <div className="fixed bottom-5 right-5 z-50">
+    <div className="fixed bottom-5 right-5 z-40">
       <div
         className={cn(
           "mb-3 w-[min(26rem,calc(100vw-1.5rem))] origin-bottom-right transition duration-300",

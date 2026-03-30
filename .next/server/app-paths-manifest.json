@@ -1,6 +1,7 @@
 {
-  "/page": "app/page.js",
+  "/(public)/chat/page": "app/(public)/chat/page.js",
   "/(protected)/dashboard/page": "app/(protected)/dashboard/page.js",
-  "/(protected)/dashboard/alerts/page": "app/(protected)/dashboard/alerts/page.js",
-  "/(protected)/dashboard/analytics/page": "app/(protected)/dashboard/analytics/page.js"
+  "/(protected)/dashboard/assigned-tank/page": "app/(protected)/dashboard/assigned-tank/page.js",
+  "/(protected)/dashboard/analytics/page": "app/(protected)/dashboard/analytics/page.js",
+  "/(protected)/dashboard/complaints/page": "app/(protected)/dashboard/complaints/page.js"
 }

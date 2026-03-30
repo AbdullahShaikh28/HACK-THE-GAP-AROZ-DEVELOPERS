@@ -1,0 +1,600 @@
+/* Custom dashboard shell — scoped to .dashboard-app-shell */
+
+/* Public site palette (see FrontendHeader): navy header #1a3a6e, orange accent #e8610a */
+.dashboard-app-shell {
+  --ds-sidebar-bg: #1a3a6e;
+  --ds-sidebar-fg: #ffffff;
+  --ds-sidebar-border: rgba(255, 255, 255, 0.15);
+  --ds-sidebar-accent: rgba(255, 255, 255, 0.1);
+  --ds-sidebar-accent-fg: #ffffff;
+  --ds-sidebar-primary: #e8610a;
+  --ds-sidebar-primary-fg: #ffffff;
+  --ds-sidebar-muted: rgba(255, 255, 255, 0.65);
+  --ds-sidebar-width: 260px;
+  --ds-sidebar-collapsed: 56px;
+  --ds-content-bg: #ffffff;
+  --ds-content-fg: #0f172a;
+  --ds-border: #e2e8f0;
+  --ds-topbar-btn-hover: rgba(26, 58, 110, 0.08);
+  --ds-topbar-muted: #64748b;
+  --ds-tooltip-bg: #ffffff;
+  --ds-tooltip-fg: #1a3a6e;
+  --ds-radius: 8px;
+  --ds-shadow: 0 1px 3px rgba(0, 0, 0, 0.08), 0 1px 2px rgba(0, 0, 0, 0.05);
+  --ds-shadow-md: 0 4px 16px rgba(0, 0, 0, 0.12);
+  --ds-transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+  font-family: var(--font-sans), system-ui, sans-serif;
+}
+
+.dashboard-app-shell.ds-theme-dark {
+  --ds-sidebar-bg: #0f2242;
+  --ds-sidebar-fg: #f1f5f9;
+  --ds-sidebar-border: rgba(255, 255, 255, 0.12);
+  --ds-sidebar-accent: rgba(255, 255, 255, 0.08);
+  --ds-sidebar-accent-fg: #f8fafc;
+  --ds-sidebar-primary: #f5a623;
+  --ds-sidebar-primary-fg: #0f172a;
+  --ds-sidebar-muted: rgba(241, 245, 249, 0.55);
+  --ds-content-bg: #0f172a;
+  --ds-content-fg: #e2e8f0;
+  --ds-border: #1e293b;
+  --ds-topbar-btn-hover: rgba(255, 255, 255, 0.06);
+  --ds-topbar-muted: #94a3b8;
+  --ds-tooltip-bg: #1e293b;
+  --ds-tooltip-fg: #f8fafc;
+}
+
+.dashboard-app-shell.ds-app-shell {
+  display: flex;
+  flex-direction: row;
+  align-items: stretch;
+  flex: 1;
+  min-height: 0;
+  /* Lock shell height so the sidebar column can fill the viewport and pin the footer */
+  height: 100svh;
+  max-height: 100svh;
+  overflow: hidden;
+  transition: var(--ds-transition);
+}
+
+/* Sidebar */
+.dashboard-app-shell .ds-sidebar {
+  width: var(--ds-sidebar-width);
+  min-width: var(--ds-sidebar-width);
+  background: var(--ds-sidebar-bg);
+  border-right: 1px solid var(--ds-sidebar-border);
+  display: flex;
+  flex-direction: column;
+  align-self: stretch;
+  min-height: 0;
+  height: 100%;
+  max-height: 100%;
+  overflow: hidden;
+  transition:
+    width 0.28s cubic-bezier(0.4, 0, 0.2, 1),
+    min-width 0.28s cubic-bezier(0.4, 0, 0.2, 1);
+  position: relative;
+  z-index: 10;
+  color: var(--ds-sidebar-fg);
+}
+
+.dashboard-app-shell .ds-sidebar.ds-sidebar-collapsed {
+  width: var(--ds-sidebar-collapsed);
+  min-width: var(--ds-sidebar-collapsed);
+}
+
+.dashboard-app-shell .ds-sidebar-rail {
+  position: absolute;
+  right: -6px;
+  top: 0;
+  bottom: 0;
+  width: 12px;
+  cursor: col-resize;
+  z-index: 20;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: none;
+  padding: 0;
+  background: transparent;
+}
+
+.dashboard-app-shell .ds-sidebar-rail::after {
+  content: "";
+  width: 2px;
+  height: 40px;
+  background: var(--ds-sidebar-border);
+  border-radius: 1px;
+  opacity: 0;
+  transition: opacity 0.2s;
+}
+
+.dashboard-app-shell .ds-sidebar-rail:hover::after {
+  opacity: 1;
+}
+
+.dashboard-app-shell .ds-sidebar-header {
+  padding: 14px 12px 10px;
+  border-bottom: 1px solid var(--ds-sidebar-border);
+  flex-shrink: 0;
+}
+
+.dashboard-app-shell .ds-brand {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  overflow: hidden;
+}
+
+/* Same asset as FrontendHeader: /csmc-logo.jpeg */
+.dashboard-app-shell .ds-brand-logo-wrap {
+  position: relative;
+  width: 52px;
+  height: 48px;
+  flex-shrink: 0;
+  border-radius: 8px;
+  background: rgba(255, 255, 255, 0.12);
+  border: 1px solid rgba(255, 255, 255, 0.18);
+  overflow: hidden;
+}
+
+.dashboard-app-shell .ds-brand-text {
+  overflow: hidden;
+  transition: var(--ds-transition);
+}
+
+.dashboard-app-shell .ds-sidebar.ds-sidebar-collapsed .ds-brand-text {
+  width: 0;
+  opacity: 0;
+}
+
+.dashboard-app-shell .ds-brand-name {
+  font-size: 12px;
+  font-weight: 800;
+  color: var(--ds-sidebar-fg);
+  white-space: nowrap;
+  line-height: 1.25;
+  letter-spacing: 0.02em;
+}
+
+.dashboard-app-shell .ds-brand-sub {
+  font-size: 10px;
+  font-weight: 500;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--ds-sidebar-muted);
+  white-space: nowrap;
+}
+
+.dashboard-app-shell .ds-sidebar-content {
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow-y: auto;
+  overflow-x: hidden;
+  padding: 8px 0;
+  scrollbar-width: thin;
+  scrollbar-color: var(--ds-sidebar-border) transparent;
+}
+
+.dashboard-app-shell .ds-sidebar-group {
+  margin-bottom: 4px;
+}
+
+.dashboard-app-shell .ds-group-label {
+  font-size: 10px;
+  font-weight: 600;
+  letter-spacing: 1.2px;
+  text-transform: uppercase;
+  color: var(--ds-sidebar-muted);
+  padding: 8px 14px 4px;
+  white-space: nowrap;
+  overflow: hidden;
+  transition: var(--ds-transition);
+}
+
+.dashboard-app-shell .ds-sidebar.ds-sidebar-collapsed .ds-group-label {
+  opacity: 0;
+  height: 0;
+  padding: 0;
+  margin: 0;
+}
+
+.dashboard-app-shell .ds-sidebar-menu {
+  list-style: none;
+  padding: 0 6px;
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+}
+
+.dashboard-app-shell .ds-menu-item {
+  position: relative;
+}
+
+.dashboard-app-shell .ds-menu-btn {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 0 10px;
+  height: 36px;
+  border: none;
+  background: none;
+  border-radius: 7px;
+  cursor: pointer;
+  font-family: inherit;
+  font-size: 13.5px;
+  font-weight: 500;
+  color: var(--ds-sidebar-fg);
+  text-align: left;
+  transition:
+    background 0.14s,
+    color 0.14s,
+    transform 0.1s;
+  white-space: nowrap;
+  position: relative;
+  overflow: hidden;
+  text-decoration: none;
+}
+
+.dashboard-app-shell .ds-menu-btn:hover {
+  background: var(--ds-sidebar-accent);
+  color: var(--ds-sidebar-accent-fg);
+}
+
+.dashboard-app-shell .ds-menu-btn:active {
+  transform: scale(0.98);
+}
+
+.dashboard-app-shell .ds-menu-btn.ds-active {
+  background: var(--ds-sidebar-primary);
+  color: var(--ds-sidebar-primary-fg);
+  font-weight: 600;
+  box-shadow: 0 2px 8px rgba(232, 97, 10, 0.45);
+}
+
+.dashboard-app-shell .ds-menu-icon {
+  width: 18px;
+  height: 18px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  opacity: 0.8;
+}
+
+.dashboard-app-shell .ds-menu-btn.ds-active .ds-menu-icon {
+  opacity: 1;
+}
+
+.dashboard-app-shell .ds-menu-label {
+  flex: 1;
+  overflow: hidden;
+  transition:
+    width 0.25s cubic-bezier(0.4, 0, 0.2, 1),
+    opacity 0.2s;
+}
+
+.dashboard-app-shell .ds-sidebar.ds-sidebar-collapsed .ds-menu-label {
+  width: 0;
+  opacity: 0;
+  overflow: hidden;
+}
+
+.dashboard-app-shell .ds-menu-badge {
+  min-width: 20px;
+  height: 20px;
+  padding: 0 6px;
+  border-radius: 10px;
+  background: rgba(255, 255, 255, 0.15);
+  color: #fff;
+  font-size: 10px;
+  font-weight: 700;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition:
+    width 0.25s,
+    opacity 0.2s;
+  font-variant-numeric: tabular-nums;
+}
+
+.dashboard-app-shell .ds-menu-btn.ds-active .ds-menu-badge {
+  background: rgba(255, 255, 255, 0.25);
+  color: #fff;
+}
+
+.dashboard-app-shell .ds-sidebar.ds-sidebar-collapsed .ds-menu-badge {
+  width: 0;
+  opacity: 0;
+  overflow: hidden;
+  padding: 0;
+  min-width: 0;
+}
+
+.dashboard-app-shell .ds-chevron {
+  width: 14px;
+  height: 14px;
+  flex-shrink: 0;
+  color: var(--ds-sidebar-muted);
+  transition:
+    transform 0.2s,
+    opacity 0.2s;
+}
+
+.dashboard-app-shell .ds-sidebar.ds-sidebar-collapsed .ds-chevron {
+  opacity: 0;
+  width: 0;
+}
+
+.dashboard-app-shell .ds-menu-item.ds-sub-open > .ds-menu-btn .ds-chevron {
+  transform: rotate(180deg);
+}
+
+.dashboard-app-shell .ds-tooltip-wrap {
+  position: relative;
+}
+
+.dashboard-app-shell .ds-tooltip-text {
+  position: absolute;
+  left: calc(100% + 10px);
+  top: 50%;
+  transform: translateY(-50%);
+  background: var(--ds-tooltip-bg);
+  color: var(--ds-tooltip-fg);
+  padding: 5px 10px;
+  border-radius: 6px;
+  font-size: 12px;
+  font-weight: 500;
+  white-space: nowrap;
+  pointer-events: none;
+  opacity: 0;
+  transition: opacity 0.15s;
+  z-index: 50;
+  box-shadow: var(--ds-shadow-md);
+}
+
+.dashboard-app-shell .ds-sidebar.ds-sidebar-collapsed .ds-tooltip-wrap:hover .ds-tooltip-text {
+  opacity: 1;
+}
+
+.dashboard-app-shell .ds-sub-menu {
+  overflow: hidden;
+  max-height: 0;
+  transition: max-height 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.dashboard-app-shell .ds-sub-menu.ds-open {
+  max-height: 200px;
+}
+
+.dashboard-app-shell .ds-sub-list {
+  list-style: none;
+  margin: 2px 0 2px 18px;
+  border-left: 1.5px solid var(--ds-sidebar-border);
+  padding: 2px 0 2px 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+}
+
+.dashboard-app-shell .ds-sub-btn {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  padding: 0 8px;
+  height: 30px;
+  border: none;
+  background: none;
+  border-radius: 5px;
+  cursor: pointer;
+  font-family: inherit;
+  font-size: 12.5px;
+  color: var(--ds-sidebar-muted);
+  text-align: left;
+  transition:
+    background 0.14s,
+    color 0.14s;
+  white-space: nowrap;
+  text-decoration: none;
+}
+
+.dashboard-app-shell .ds-sub-btn:hover {
+  background: var(--ds-sidebar-accent);
+  color: var(--ds-sidebar-accent-fg);
+}
+
+.dashboard-app-shell .ds-sub-btn.ds-active {
+  color: #f5a623;
+  font-weight: 600;
+}
+
+.dashboard-app-shell .ds-sidebar-sep {
+  height: 1px;
+  background: var(--ds-sidebar-border);
+  margin: 6px 12px;
+}
+
+.dashboard-app-shell .ds-sidebar-footer {
+  padding: 8px 6px 10px;
+  border-top: 1px solid var(--ds-sidebar-border);
+  flex-shrink: 0;
+  background: var(--ds-sidebar-bg);
+}
+
+.dashboard-app-shell .ds-user-btn {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 8px 10px;
+  border: none;
+  background: none;
+  border-radius: 7px;
+  cursor: pointer;
+  transition: background 0.14s;
+  text-align: left;
+  overflow: hidden;
+  font: inherit;
+  color: inherit;
+}
+
+.dashboard-app-shell .ds-user-btn:hover {
+  background: var(--ds-sidebar-accent);
+}
+
+.dashboard-app-shell .ds-avatar {
+  width: 30px;
+  height: 30px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, #1a3a6e, #e8610a);
+  color: #fff;
+  font-size: 11px;
+  font-weight: 700;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.dashboard-app-shell .ds-user-info {
+  overflow: hidden;
+  transition: var(--ds-transition);
+}
+
+.dashboard-app-shell .ds-sidebar.ds-sidebar-collapsed .ds-user-info {
+  width: 0;
+  opacity: 0;
+}
+
+.dashboard-app-shell .ds-user-name {
+  font-size: 12.5px;
+  font-weight: 600;
+  color: var(--ds-sidebar-fg);
+  white-space: nowrap;
+}
+
+.dashboard-app-shell .ds-user-email {
+  font-size: 10.5px;
+  color: var(--ds-sidebar-muted);
+  white-space: nowrap;
+}
+
+.dashboard-app-shell .ds-user-more {
+  margin-left: auto;
+  color: var(--ds-sidebar-muted);
+  flex-shrink: 0;
+  transition: opacity 0.2s;
+}
+
+.dashboard-app-shell .ds-sidebar.ds-sidebar-collapsed .ds-user-more {
+  opacity: 0;
+  width: 0;
+  overflow: hidden;
+}
+
+/* Main + topbar */
+.dashboard-app-shell .ds-main-content {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  min-height: 0;
+  min-width: 0;
+  background: var(--ds-content-bg);
+  color: var(--ds-content-fg);
+}
+
+.dashboard-app-shell .ds-topbar {
+  flex-shrink: 0;
+  display: flex;
+  flex-direction: column;
+  padding: 0;
+  gap: 0;
+  background: var(--ds-content-bg);
+  box-shadow: 0 2px 12px rgba(0, 0, 0, 0.06);
+}
+
+.dashboard-app-shell .ds-topbar-inner {
+  display: flex;
+  min-height: 52px;
+  align-items: center;
+  gap: 14px;
+  padding: 0 24px;
+}
+
+/* Orange–gold strip — same as FrontendHeader */
+.dashboard-app-shell .ds-topbar-gradient {
+  height: 4px;
+  width: 100%;
+  flex-shrink: 0;
+  background: linear-gradient(90deg, #e8610a 0%, #f5a623 50%, #f47c2e 100%);
+}
+
+.dashboard-app-shell .ds-trigger-btn {
+  width: 34px;
+  height: 34px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: none;
+  background: none;
+  border-radius: 7px;
+  cursor: pointer;
+  color: var(--ds-content-fg);
+  transition: background 0.14s;
+}
+
+.dashboard-app-shell .ds-trigger-btn:hover {
+  background: var(--ds-topbar-btn-hover);
+}
+
+.dashboard-app-shell .ds-topbar-title {
+  font-size: 15px;
+  font-weight: 600;
+}
+
+.dashboard-app-shell .ds-topbar-actions {
+  margin-left: auto;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.dashboard-app-shell .ds-theme-toggle,
+.dashboard-app-shell .ds-kbd-hint {
+  padding: 5px 12px;
+  border-radius: 6px;
+  border: 1px solid var(--ds-border);
+  background: transparent;
+  cursor: pointer;
+  font-family: inherit;
+  font-size: 12px;
+  color: var(--ds-topbar-muted);
+  transition: all 0.14s;
+}
+
+.dashboard-app-shell .ds-theme-toggle:hover,
+.dashboard-app-shell .ds-kbd-hint:hover {
+  border-color: #e8610a;
+  color: #1a3a6e;
+}
+
+.dashboard-app-shell .ds-page-body {
+  flex: 1;
+  overflow-y: auto;
+  min-height: 0;
+}
+
+.dashboard-app-shell .ds-sidebar-content::-webkit-scrollbar {
+  width: 5px;
+}
+
+.dashboard-app-shell .ds-sidebar-content::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.dashboard-app-shell .ds-sidebar-content::-webkit-scrollbar-thumb {
+  background: var(--ds-sidebar-border);
+  border-radius: 3px;
+}
