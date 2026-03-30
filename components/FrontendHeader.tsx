@@ -2,11 +2,11 @@ import Link from "next/link";
 import Image from "next/image";
 
 type FrontendHeaderProps = {
-  active?: "home" | "chat" | "tanks";
+  active?: "home" | "chat" | "tanks" | "complaints";
 };
 
 export function FrontendHeader({ active }: FrontendHeaderProps) {
-  const linkClass = (key: "home" | "chat" | "tanks") =>
+  const linkClass = (key: "home" | "chat" | "tanks" | "complaints") =>
     [
       "rounded-md px-3.5 py-2 font-semibold tracking-[0.3px] transition",
       active === key
@@ -33,7 +33,7 @@ export function FrontendHeader({ active }: FrontendHeaderProps) {
             <div className="relative h-[130px] w-[152px] overflow-hidden ">
               <Image
                 src="/csmc-logo.jpeg"
-                alt="Aurangabad Municipal Corporation logo"
+                alt="Chhatrapati Sambhajinagar Corporation logo"
                 fill
                 className="object-contain p-1"
                 priority
@@ -42,7 +42,7 @@ export function FrontendHeader({ active }: FrontendHeaderProps) {
 
             <div className="border-l-2 border-white/20 pl-3.5">
               <p className="text-[15px] font-extrabold leading-[1.2] tracking-[0.5px]">
-                Aurangabad Municipal Corporation
+                Chhatrapati Sambhajinagar Corporation
               </p>
               <p className="text-[10.5px] uppercase tracking-[0.8px] text-white/65">
                 Chhatrapati Sambhajinagar Smart City
@@ -61,6 +61,9 @@ export function FrontendHeader({ active }: FrontendHeaderProps) {
             </Link>
             <Link href="/tanks" className={linkClass("tanks")}>
               Tanks
+            </Link>
+            <Link href="/complaints" className={linkClass("complaints")}>
+              Complaint
             </Link>
             <Link
               href="/login"

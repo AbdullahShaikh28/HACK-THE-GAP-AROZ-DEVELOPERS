@@ -33,10 +33,20 @@ function accentColor(type: WaterTank["type"]) {
   return "#1e7e34";
 }
 
-function estimatedLevel(tank: WaterTank) {
+function levelFromData(tank: WaterTank) {
+  if (tank.capacityLakhLiters <= 0) {
+    return 0;
+  }
+
+  const derivedAvailable =
+    tank.capacityAvailableLakhLiters > 0
+      ? tank.capacityAvailableLakhLiters
+      : Math.max(0, tank.capacityLakhLiters - tank.capacityUsedLakhLiters);
+
+  // Visual water height should represent currently available water.
   return Math.min(
-    92,
-    Math.max(18, (tank.capacityLakhLiters * 7 + tank.id * 11) % 100),
+    100,
+    Math.max(0, Math.round((derivedAvailable / tank.capacityLakhLiters) * 100)),
   );
 }
 
@@ -203,7 +213,7 @@ type TankMonitorModalProps = {
 };
 
 function TankMonitorModal({ tank, onClose }: TankMonitorModalProps) {
-  const level = estimatedLevel(tank);
+  const level = levelFromData(tank);
   const status = statusForLevel(level);
   const waterHeight = Math.round((level / 100) * 148);
 
@@ -316,6 +326,22 @@ function TankMonitorModal({ tank, onClose }: TankMonitorModalProps) {
                 </p>
                 <p className="text-lg font-bold text-white">
                   {tank.capacityLakhLiters} Lakh Liters
+                </p>
+              </div>
+              <div>
+                <p className="mb-1 font-mono text-[11px] tracking-[1px] text-white/35">
+                  USED
+                </p>
+                <p className="text-lg font-bold text-white">
+                  {tank.capacityUsedLakhLiters} Lakh Liters
+                </p>
+              </div>
+              <div>
+                <p className="mb-1 font-mono text-[11px] tracking-[1px] text-white/35">
+                  AVAILABLE
+                </p>
+                <p className="text-lg font-bold text-white">
+                  {tank.capacityAvailableLakhLiters} Lakh Liters
                 </p>
               </div>
               <div>

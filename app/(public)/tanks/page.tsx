@@ -1,10 +1,12 @@
 import { Montserrat, Noto_Sans, Tiro_Devanagari_Hindi } from "next/font/google";
 import { FrontendHeader } from "@/components/FrontendHeader";
 import { TanksInventory } from "@/components/TanksInventory";
+import { TankAreaSuggestions } from "@/components/tanks/TankAreaSuggestions";
 import {
-  topCapacityTanks,
-  waterTanks,
-  waterTankSummary,
+  buildWaterTankSummary,
+  getTankAreaSuggestions,
+  getTopCapacityTanks,
+  getWaterTanks,
 } from "@/services/tanks";
 
 const montserrat = Montserrat({
@@ -25,7 +27,12 @@ const tiro = Tiro_Devanagari_Hindi({
   variable: "--font-tiro",
 });
 
-export default function TanksPage() {
+export default async function TanksPage() {
+  const waterTanks = await getWaterTanks();
+  const areaSuggestions = await getTankAreaSuggestions();
+  const waterTankSummary = buildWaterTankSummary(waterTanks);
+  const topCapacityTanks = getTopCapacityTanks(waterTanks);
+
   return (
     <main
       className={`${montserrat.variable} ${notoSans.variable} ${tiro.variable} min-h-screen bg-[#f2f5f9] text-[#1a2535]`}
@@ -211,6 +218,7 @@ export default function TanksPage() {
         </section>
 
         <TanksInventory tanks={waterTanks} />
+        <TankAreaSuggestions tanks={waterTanks} suggestions={areaSuggestions} />
       </div>
     </main>
   );

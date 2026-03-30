@@ -1,0 +1,63 @@
+create table if not exists public.water_tanks (
+  id integer primary key,
+  name text not null,
+  type text not null check (type in ('ESR', 'GSR', 'Sump')),
+  capacity_lakh_liters numeric(10,2) not null check (capacity_lakh_liters >= 0),
+  latitude double precision not null,
+  longitude double precision not null,
+  ward text not null,
+  area_address text not null,
+  created_at timestamptz default now()
+);
+
+insert into public.water_tanks (
+  id, name, type, capacity_lakh_liters, latitude, longitude, ward, area_address
+)
+values
+  (1, 'Nakshatrawadi Tank 1', 'GSR', 65, 19.915, 75.352, 'Nakshatrawadi Ward', 'Nakshatrawadi, Chhatrapati Sambhajinagar'),
+  (2, 'Nakshatrawadi Tank 2', 'GSR', 48, 19.916, 75.353, 'Nakshatrawadi Ward', 'Nakshatrawadi, Chhatrapati Sambhajinagar'),
+  (3, 'Nakshatrawadi Tank 3', 'GSR', 25, 19.917, 75.354, 'Nakshatrawadi Ward', 'Nakshatrawadi, Chhatrapati Sambhajinagar'),
+  (4, 'Shahnoorwadi Tank', 'ESR', 20, 19.89, 75.34, 'Shahnoorwadi Ward', 'Shahnoorwadi, Chhatrapati Sambhajinagar'),
+  (5, 'CIDCO N-1 Tank', 'ESR', 15, 19.87, 75.34, 'CIDCO Ward', 'CIDCO N-1, Chhatrapati Sambhajinagar'),
+  (6, 'CIDCO N-2 Tank', 'ESR', 15, 19.872, 75.342, 'CIDCO Ward', 'CIDCO N-2, Chhatrapati Sambhajinagar'),
+  (7, 'CIDCO N-4 Tank', 'ESR', 18, 19.874, 75.344, 'CIDCO Ward', 'CIDCO N-4, Chhatrapati Sambhajinagar'),
+  (8, 'N-6 (AUR-1)', 'ESR', 11, 19.876, 75.343, 'CIDCO Ward', 'N-6, CIDCO, Chhatrapati Sambhajinagar'),
+  (9, 'N-6 (AUR-2)', 'ESR', 14, 19.877, 75.345, 'CIDCO Ward', 'N-6, CIDCO, Chhatrapati Sambhajinagar'),
+  (10, 'N-6 (AUR-3)', 'ESR', 15, 19.878, 75.346, 'CIDCO Ward', 'N-6, CIDCO, Chhatrapati Sambhajinagar'),
+  (11, 'N-6 Sump', 'Sump', 20, 19.876, 75.344, 'CIDCO Ward', 'N-6 Sump, CIDCO, Chhatrapati Sambhajinagar'),
+  (12, 'Satara Area Tank', 'ESR', 18, 19.86, 75.36, 'Satara Ward', 'Satara Area, Chhatrapati Sambhajinagar'),
+  (13, 'Mukundwadi Tank', 'ESR', 20, 19.876, 75.372, 'Mukundwadi Ward', 'Mukundwadi, Chhatrapati Sambhajinagar'),
+  (14, 'Bajajnagar Tank', 'ESR', 22, 19.84, 75.38, 'Bajajnagar Ward', 'Bajajnagar, Chhatrapati Sambhajinagar'),
+  (15, 'Waluj Tank', 'ESR', 25, 19.838, 75.397, 'Waluj Ward', 'Waluj, Chhatrapati Sambhajinagar'),
+  (16, 'Beed Bypass Tank', 'ESR', 18, 19.89, 75.36, 'Beed Bypass Ward', 'Beed Bypass, Chhatrapati Sambhajinagar'),
+  (17, 'Railway Station Tank', 'GSR', 30, 19.876, 75.346, 'Station Ward', 'Railway Station, Station, Chhatrapati Sambhajinagar'),
+  (18, 'Osmanpura Tank', 'ESR', 18, 19.885, 75.335, 'Osmanpura Ward', 'Osmanpura, Chhatrapati Sambhajinagar'),
+  (19, 'Kranti Chowk Tank', 'GSR', 20, 19.883, 75.33, 'Kranti Chowk Ward', 'Kranti Chowk, Chhatrapati Sambhajinagar'),
+  (20, 'Ulkanagari Tank', 'ESR', 15, 19.868, 75.343, 'Ulkanagari Ward', 'Ulkanagari, Chhatrapati Sambhajinagar'),
+  (21, 'Garkheda Tank', 'ESR', 18, 19.866, 75.35, 'Garkheda Ward', 'Garkheda, Chhatrapati Sambhajinagar'),
+  (22, 'Jawahar Colony Tank', 'ESR', 15, 19.87, 75.355, 'Jawahar Colony Ward', 'Jawahar Colony, Chhatrapati Sambhajinagar'),
+  (23, 'Town Hall Tank', 'GSR', 25, 19.884, 75.328, 'Town Hall Ward', 'Town Hall, Chhatrapati Sambhajinagar'),
+  (24, 'Delhi Gate (New)', 'GSR', 14, 19.884, 75.327, 'Old City Ward', 'Delhi Gate, Old City, Chhatrapati Sambhajinagar'),
+  (25, 'Delhi Gate (Old)', 'GSR', 18, 19.883, 75.326, 'Old City Ward', 'Delhi Gate, Old City, Chhatrapati Sambhajinagar'),
+  (26, 'Harsul', 'ESR', 26, 19.922, 75.319, 'Harsul Ward', 'Harsul, Chhatrapati Sambhajinagar'),
+  (27, 'Harsul Gaon (New)', 'ESR', 8, 19.924, 75.318, 'Harsul Ward', 'Harsul Gaon, Chhatrapati Sambhajinagar'),
+  (28, 'Harsul Gaon (Old)', 'ESR', 5, 19.923, 75.317, 'Harsul Ward', 'Harsul Gaon, Chhatrapati Sambhajinagar'),
+  (29, 'Harsul Jail', 'ESR', 10, 19.925, 75.32, 'Harsul Ward', 'Harsul Jail, Chhatrapati Sambhajinagar'),
+  (30, 'N-7 (AUR-1)', 'ESR', 11, 19.88, 75.35, 'CIDCO Ward', 'N-7, CIDCO, Chhatrapati Sambhajinagar'),
+  (31, 'N-7 (AUR-2)', 'ESR', 14, 19.881, 75.351, 'CIDCO Ward', 'N-7, CIDCO, Chhatrapati Sambhajinagar'),
+  (32, 'N-7 (AUR-3)', 'ESR', 15, 19.882, 75.352, 'CIDCO Ward', 'N-7, CIDCO, Chhatrapati Sambhajinagar'),
+  (33, 'N-7 Sump', 'Sump', 20, 19.88, 75.351, 'CIDCO Ward', 'N-7 Sump, CIDCO, Chhatrapati Sambhajinagar'),
+  (34, 'Harsool Extension Tank', 'ESR', 16, 19.926, 75.322, 'Harsul Ward', 'Harsool Extension, Harsul, Chhatrapati Sambhajinagar'),
+  (35, 'Chikalthana Tank', 'ESR', 20, 19.87, 75.38, 'Chikalthana Ward', 'Chikalthana, Chhatrapati Sambhajinagar'),
+  (36, 'Airport Area Tank', 'ESR', 18, 19.862, 75.395, 'Airport Ward', 'Airport Area, Airport, Chhatrapati Sambhajinagar'),
+  (37, 'MIT College Tank', 'ESR', 12, 19.865, 75.365, 'MIT Ward', 'MIT College, MIT, Chhatrapati Sambhajinagar'),
+  (38, 'Padegaon Tank', 'ESR', 17, 19.895, 75.31, 'Padegaon Ward', 'Padegaon, Chhatrapati Sambhajinagar'),
+  (39, 'Cantonment Tank', 'GSR', 22, 19.9, 75.3, 'Cantonment Ward', 'Cantonment, Chhatrapati Sambhajinagar')
+on conflict (id) do update set
+  name = excluded.name,
+  type = excluded.type,
+  capacity_lakh_liters = excluded.capacity_lakh_liters,
+  latitude = excluded.latitude,
+  longitude = excluded.longitude,
+  ward = excluded.ward,
+  area_address = excluded.area_address;
