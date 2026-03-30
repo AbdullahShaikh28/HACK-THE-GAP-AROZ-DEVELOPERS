@@ -1,9 +1,17 @@
 "use client";
 
 import { useRouter } from "next/navigation";
+import type { ButtonHTMLAttributes } from "react";
 import { createClient } from "@/lib/supabase/client";
+import { cn } from "@/utils/helpers";
 
-export function SignOutButton() {
+type SignOutButtonProps = ButtonHTMLAttributes<HTMLButtonElement>;
+
+export function SignOutButton({
+  className,
+  type = "button",
+  ...props
+}: SignOutButtonProps) {
   const router = useRouter();
 
   async function handleSignOut() {
@@ -15,9 +23,13 @@ export function SignOutButton() {
 
   return (
     <button
-      type="button"
+      type={type}
       onClick={handleSignOut}
-      className="text-sm text-muted transition hover:text-foreground"
+      className={cn(
+        "text-sm text-muted transition hover:text-foreground",
+        className,
+      )}
+      {...props}
     >
       Sign out
     </button>
