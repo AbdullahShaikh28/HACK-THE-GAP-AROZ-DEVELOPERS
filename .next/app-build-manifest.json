@@ -12,10 +12,30 @@
       "static/css/app/(protected)/dashboard/layout.css",
       "static/chunks/app/(protected)/dashboard/layout.js"
     ],
-    "/(protected)/dashboard/page": [
+    "/(protected)/dashboard/zone-contacts/page": [
       "static/chunks/webpack.js",
       "static/chunks/main-app.js",
-      "static/chunks/app/(protected)/dashboard/page.js"
+      "static/chunks/app/(protected)/dashboard/zone-contacts/page.js"
+    ],
+    "/page": [
+      "static/chunks/webpack.js",
+      "static/chunks/main-app.js",
+      "static/chunks/app/page.js"
+    ],
+    "/(public)/complaints/page": [
+      "static/chunks/webpack.js",
+      "static/chunks/main-app.js",
+      "static/chunks/app/(public)/complaints/page.js"
+    ],
+    "/(public)/supply-report/page": [
+      "static/chunks/webpack.js",
+      "static/chunks/main-app.js",
+      "static/chunks/app/(public)/supply-report/page.js"
+    ],
+    "/(public)/chat/page": [
+      "static/chunks/webpack.js",
+      "static/chunks/main-app.js",
+      "static/chunks/app/(public)/chat/page.js"
     ],
     "/(public)/tanks/page": [
       "static/chunks/webpack.js",
@@ -23,20 +43,30 @@
       "static/css/app/(public)/tanks/page.css",
       "static/chunks/app/(public)/tanks/page.js"
     ],
+    "/(protected)/dashboard/page": [
+      "static/chunks/webpack.js",
+      "static/chunks/main-app.js",
+      "static/chunks/app/(protected)/dashboard/page.js"
+    ],
     "/(protected)/dashboard/map/page": [
       "static/chunks/webpack.js",
       "static/chunks/main-app.js",
       "static/chunks/app/(protected)/dashboard/map/page.js"
     ],
+    "/(protected)/dashboard/complaints/page": [
+      "static/chunks/webpack.js",
+      "static/chunks/main-app.js",
+      "static/chunks/app/(protected)/dashboard/complaints/page.js"
+    ],
+    "/(protected)/dashboard/survey/page": [
+      "static/chunks/webpack.js",
+      "static/chunks/main-app.js",
+      "static/chunks/app/(protected)/dashboard/survey/page.js"
+    ],
     "/(protected)/dashboard/assigned-tank/page": [
       "static/chunks/webpack.js",
       "static/chunks/main-app.js",
       "static/chunks/app/(protected)/dashboard/assigned-tank/page.js"
-    ],
-    "/(protected)/dashboard/zone-contacts/page": [
-      "static/chunks/webpack.js",
-      "static/chunks/main-app.js",
-      "static/chunks/app/(protected)/dashboard/zone-contacts/page.js"
     ]
   }
 }

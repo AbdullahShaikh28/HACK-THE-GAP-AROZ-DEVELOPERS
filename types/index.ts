@@ -101,6 +101,7 @@ export type Database = {
           image_url: string | null;
           status: "open" | "in_progress" | "resolved" | "rejected";
           priority: "low" | "medium" | "high";
+          language: "en" | "hi" | "mr" | "ur" | null;
           created_at: string;
         };
         Insert: {
@@ -119,6 +120,7 @@ export type Database = {
           image_url?: string | null;
           status?: "open" | "in_progress" | "resolved" | "rejected";
           priority?: "low" | "medium" | "high";
+          language?: "en" | "hi" | "mr" | "ur" | null;
           created_at?: string;
         };
         Update: {
@@ -137,6 +139,64 @@ export type Database = {
           image_url?: string | null;
           status?: "open" | "in_progress" | "resolved" | "rejected";
           priority?: "low" | "medium" | "high";
+          language?: "en" | "hi" | "mr" | "ur" | null;
+          created_at?: string;
+        };
+        Relationships: [];
+      };
+      field_surveys: {
+        Row: {
+          id: string;
+          tank_id: number;
+          submitted_by: string | null;
+          respondent_name: string;
+          phone_number: string;
+          survey_date: string | null;
+          arrival_time: string | null;
+          duration_minutes: number | null;
+          pressure_level: "low" | "medium" | "high";
+          notes: string | null;
+          image_url: string | null;
+          submission_kind: "field_survey" | "supply_report";
+          report_channel: "web" | "whatsapp" | null;
+          language: "en" | "hi" | "mr" | "ur" | null;
+          zone_number: number | null;
+          created_at: string;
+        };
+        Insert: {
+          id?: string;
+          tank_id: number;
+          submitted_by?: string | null;
+          respondent_name: string;
+          phone_number: string;
+          survey_date?: string | null;
+          arrival_time?: string | null;
+          duration_minutes?: number | null;
+          pressure_level: "low" | "medium" | "high";
+          notes?: string | null;
+          image_url?: string | null;
+          submission_kind?: "field_survey" | "supply_report";
+          report_channel?: "web" | "whatsapp" | null;
+          language?: "en" | "hi" | "mr" | "ur" | null;
+          zone_number?: number | null;
+          created_at?: string;
+        };
+        Update: {
+          id?: string;
+          tank_id?: number;
+          submitted_by?: string | null;
+          respondent_name?: string;
+          phone_number?: string;
+          survey_date?: string | null;
+          arrival_time?: string | null;
+          duration_minutes?: number | null;
+          pressure_level?: "low" | "medium" | "high";
+          notes?: string | null;
+          image_url?: string | null;
+          submission_kind?: "field_survey" | "supply_report";
+          report_channel?: "web" | "whatsapp" | null;
+          language?: "en" | "hi" | "mr" | "ur" | null;
+          zone_number?: number | null;
           created_at?: string;
         };
         Relationships: [];
@@ -180,7 +240,7 @@ export type Database = {
           tank_id: number;
           name: string | null;
           phone_number: string;
-          source: "complaint" | "profile" | "campaign_import" | "survey";
+          source: "complaint" | "profile" | "campaign_import" | "survey" | "supply_report";
           zone_number: number | null;
           created_at: string;
         };
@@ -189,7 +249,7 @@ export type Database = {
           tank_id: number;
           name?: string | null;
           phone_number: string;
-          source?: "complaint" | "profile" | "campaign_import" | "survey";
+          source?: "complaint" | "profile" | "campaign_import" | "survey" | "supply_report";
           zone_number?: number | null;
           created_at?: string;
         };
@@ -198,7 +258,7 @@ export type Database = {
           tank_id?: number;
           name?: string | null;
           phone_number?: string;
-          source?: "complaint" | "profile" | "campaign_import" | "survey";
+          source?: "complaint" | "profile" | "campaign_import" | "survey" | "supply_report";
           zone_number?: number | null;
           created_at?: string;
         };

@@ -138,6 +138,25 @@ function IconZoneContacts() {
   );
 }
 
+function IconSurvey() {
+  return (
+    <svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden>
+      <rect
+        x="2.5"
+        y="2"
+        width="11"
+        height="12"
+        rx="1.5"
+        stroke="currentColor"
+        strokeWidth="1.4"
+      />
+      <line x1="5" y1="5.5" x2="11" y2="5.5" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round" />
+      <line x1="5" y1="8" x2="11" y2="8" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round" />
+      <line x1="5" y1="10.5" x2="9" y2="10.5" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round" />
+    </svg>
+  );
+}
+
 function IconMap() {
   return (
     <svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden>
@@ -391,6 +410,8 @@ export function AppSidebar() {
   const zoneContactsActive =
     pathname === "/dashboard/zone-contacts" ||
     pathname.startsWith("/dashboard/zone-contacts/");
+  const surveyActive =
+    pathname === "/dashboard/survey" || pathname.startsWith("/dashboard/survey/");
   const analyticsActive =
     pathname === "/dashboard/analytics" ||
     pathname.startsWith("/dashboard/analytics/");
@@ -464,6 +485,21 @@ export function AppSidebar() {
                       <IconZoneContacts />
                     </span>
                     <span className="ds-menu-label">Zone contacts</span>
+                  </Link>
+                </SidebarMenuButton>
+              </SidebarMenuItem>
+
+              <SidebarMenuItem>
+                <SidebarMenuButton
+                  asChild
+                  isActive={surveyActive}
+                  tooltip="Survey"
+                >
+                  <Link href="/dashboard/survey">
+                    <span className="ds-menu-icon">
+                      <IconSurvey />
+                    </span>
+                    <span className="ds-menu-label">Survey</span>
                   </Link>
                 </SidebarMenuButton>
               </SidebarMenuItem>
