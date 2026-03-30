@@ -1,6 +1,5 @@
 import type { Metadata } from "next";
 import { FloatingChatWidget } from "@/components/FloatingChatWidget";
-import { TooltipProvider } from "@/components/ui/tooltip";
 import "./globals.css";
 import { Geist } from "next/font/google";
 import { cn } from "@/lib/utils";
@@ -20,10 +19,8 @@ export default function RootLayout({
   return (
     <html lang="en" className={cn("font-sans", geist.variable)}>
       <body>
-        <TooltipProvider>
-          {children}
-          <FloatingChatWidget />
-        </TooltipProvider>
+        {children}
+        <FloatingChatWidget />
       </body>
     </html>
   );

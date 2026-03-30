@@ -1,3 +1,4 @@
+import { Navbar } from "@/components/Navbar";
 import { Card } from "@/components/ui/Card";
 import { createClient } from "@/lib/supabase/server";
 
@@ -9,6 +10,7 @@ export default async function DashboardPage() {
 
   return (
     <main className="min-h-screen bg-background">
+      <Navbar isAuthenticated />
       <div className="mx-auto flex w-full max-w-6xl flex-col gap-6 px-6 py-10">
         <div className="space-y-2">
           <h1 className="text-3xl font-semibold text-foreground">Dashboard</h1>
