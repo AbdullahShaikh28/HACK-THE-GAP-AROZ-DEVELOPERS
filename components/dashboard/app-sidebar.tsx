@@ -487,8 +487,8 @@ export function AppSidebar() {
               </SidebarMenuItem>
 
               <SidebarMenuItem>
-                <SidebarMenuButton
-                  asChild
+                  <SidebarMenuButton
+                    asChild
                   isActive={complaintsActive}
                   tooltip="Complaints"
                 >
@@ -498,9 +498,9 @@ export function AppSidebar() {
                     </span>
                     <span className="ds-menu-label">Complaints</span>
                     <ComplaintsCountBadge />
-                  </Link>
-                </SidebarMenuButton>
-              </SidebarMenuItem>
+                    </Link>
+                  </SidebarMenuButton>
+                </SidebarMenuItem>
             </SidebarMenu>
           </SidebarGroupContent>
         </SidebarGroup>

@@ -206,7 +206,12 @@ export type Database = {
           phone_number: string;
           tank_id: number;
           selected_area_id: number | null;
-          step: "awaiting_area" | "awaiting_complaint" | "completed";
+          step:
+            | "awaiting_language"
+            | "awaiting_area"
+            | "awaiting_complaint"
+            | "completed";
+          language: string | null;
           last_inbound_message_sid: string | null;
           updated_at: string;
         };
@@ -214,7 +219,12 @@ export type Database = {
           phone_number: string;
           tank_id: number;
           selected_area_id?: number | null;
-          step?: "awaiting_area" | "awaiting_complaint" | "completed";
+          step?:
+            | "awaiting_language"
+            | "awaiting_area"
+            | "awaiting_complaint"
+            | "completed";
+          language?: string | null;
           last_inbound_message_sid?: string | null;
           updated_at?: string;
         };
@@ -222,7 +232,12 @@ export type Database = {
           phone_number?: string;
           tank_id?: number;
           selected_area_id?: number | null;
-          step?: "awaiting_area" | "awaiting_complaint" | "completed";
+          step?:
+            | "awaiting_language"
+            | "awaiting_area"
+            | "awaiting_complaint"
+            | "completed";
+          language?: string | null;
           last_inbound_message_sid?: string | null;
           updated_at?: string;
         };

@@ -1,6 +1,16 @@
 import { NextResponse } from "next/server";
 import twilio from "twilio";
 import { createClient } from "@/lib/supabase/server";
+import {
+  appendSuffixToLastChunk,
+  chunkTankMessages,
+  formatTankListLines,
+  isGreetingOrStart,
+  parseLanguageReply,
+  t,
+  type WhatsAppLang,
+} from "@/lib/whatsapp-i18n";
+import { getWhatsappOutboundMediaUrls } from "@/lib/whatsapp-outbound-media";
 
 function normalizePhone(phone: string) {
   return phone.replace(/[^\d+]/g, "").trim();
@@ -19,33 +29,30 @@ function inferTankIdFromBody(body: string) {
   return Number.isNaN(value) ? null : value;
 }
 
-function parseSelectedAreaIndex(body: string) {
-  const trimmed = body.trim();
-  if (!/^\d+$/.test(trimmed)) return null;
-  const num = Number(trimmed);
-  if (Number.isNaN(num) || num < 1 || num > 6) return null;
-  return num;
+async function sendWhatsappMessages(
+  client: ReturnType<typeof twilio>,
+  from: string,
+  to: string,
+  bodies: string[],
+) {
+  const mediaUrl = getWhatsappOutboundMediaUrls();
+  for (const body of bodies) {
+    if (!body.trim()) continue;
+    await client.messages.create({
+      from,
+      to,
+      body,
+      ...(mediaUrl.length > 0 ? { mediaUrl } : {}),
+    });
+  }
 }
 
 export async function POST(request: Request) {
   try {
-    console.log("[whatsapp:webhook] inbound request", {
-      method: request.method,
-      url: request.url,
-    });
-
     const accountSid = process.env.TWILIO_ACCOUNT_SID;
     const authToken = process.env.TWILIO_AUTH_TOKEN;
     const fromNumber = process.env.TWILIO_WHATSAPP_FROM;
     const appBaseUrl = process.env.NEXT_PUBLIC_APP_BASE_URL;
-    const twilioWebhookUrl = process.env.TWILIO_WEBHOOK_URL;
-
-    console.log("[whatsapp:webhook] env presence", {
-      hasAccountSid: Boolean(accountSid),
-      hasAuthToken: Boolean(authToken),
-      hasFromNumber: Boolean(fromNumber),
-      hasAppBaseUrl: Boolean(appBaseUrl),
-    });
 
     if (!accountSid || !authToken || !fromNumber || !appBaseUrl) {
       return NextResponse.json({ error: "Twilio environment is missing." }, { status: 500 });
@@ -62,16 +69,9 @@ export async function POST(request: Request) {
       forwardedProto && forwardedHost
         ? `${forwardedProto}://${forwardedHost}${pathname}`
         : null;
+    const twilioWebhookUrl = process.env.TWILIO_WEBHOOK_URL;
     const validationUrl = twilioWebhookUrl ?? urlFromForwarded ?? request.url;
 
-    console.log("[whatsapp:webhook] payload received", {
-      hasSignature: Boolean(twilioSignature),
-      from: form.get("From"),
-      messageSid: form.get("MessageSid"),
-      bodyPreview: (form.get("Body") ?? "").slice(0, 80),
-    });
-
-    // Validate signature when provided by Twilio.
     if (twilioSignature) {
       const isValid = twilio.validateRequest(
         authToken,
@@ -79,21 +79,7 @@ export async function POST(request: Request) {
         validationUrl,
         Object.fromEntries(form.entries()),
       );
-
-      console.log("[whatsapp:webhook] signature validation", {
-        requestUrl: request.url,
-        validationUrl,
-        twilioWebhookUrl,
-        forwardedProto,
-        forwardedHost,
-        isValid,
-      });
-
       if (!isValid) {
-        console.warn("[whatsapp:webhook] invalid signature", {
-          requestUrl: request.url,
-          validationUrl,
-        });
         return NextResponse.json({ error: "Invalid Twilio signature." }, { status: 403 });
       }
     }
@@ -129,87 +115,130 @@ export async function POST(request: Request) {
       resolvedTankId = firstTank?.id ?? null;
     }
 
+    const { data: allTanksRaw } = await (supabase as any)
+      .from("water_tanks")
+      .select("id,name,ward")
+      .order("id", { ascending: true });
+
+    const allTanks = (allTanksRaw ?? []) as Array<{
+      id: number;
+      name: string;
+      ward: string | null;
+    }>;
+
     if (resolvedTankId && sourcePhone) {
       const { data: existingSession } = await (supabase as any)
         .from("whatsapp_sessions")
-        .select("phone_number,tank_id,selected_area_id,step")
+        .select("phone_number,tank_id,selected_area_id,step,language")
         .eq("phone_number", sourcePhone)
-        .single();
+        .maybeSingle();
 
-      const { data: tankAreas } = await (supabase as any)
-        .from("tank_areas")
-        .select("id,area_name,priority_rank")
-        .eq("tank_id", resolvedTankId)
-        .order("priority_rank", { ascending: true })
-        .limit(6);
+      const langChoice = parseLanguageReply(messageBody);
+      const greeting = isGreetingOrStart(messageBody);
 
-      const areas = (tankAreas ?? []) as Array<{ id: number; area_name: string; priority_rank: number }>;
-      const selectedIndex = parseSelectedAreaIndex(messageBody);
-      let outboundReply = "";
+      const client = twilio(accountSid, authToken);
+      const outboundBodies: string[] = [];
 
-      if (!existingSession || existingSession.step === "completed") {
+      let sessionStep = existingSession?.step as string | undefined;
+      const sessionLang = existingSession?.language as WhatsAppLang | null | undefined;
+
+      /** Zone sub-step removed; move old sessions to complaint entry. */
+      if (sessionStep === "awaiting_area") {
+        await (supabase as any)
+          .from("whatsapp_sessions")
+          .update({
+            step: "awaiting_complaint",
+            selected_area_id: null,
+            updated_at: new Date().toISOString(),
+          })
+          .eq("phone_number", sourcePhone);
+        sessionStep = "awaiting_complaint";
+      }
+
+      /** Reset to language selection (e.g. user sent "hi"). */
+      if (greeting) {
         await (supabase as any).from("whatsapp_sessions").upsert(
           {
             phone_number: sourcePhone,
             tank_id: resolvedTankId,
             selected_area_id: null,
-            step: "awaiting_area",
+            step: "awaiting_language",
+            language: null,
             last_inbound_message_sid: messageSid,
+            updated_at: new Date().toISOString(),
           },
           { onConflict: "phone_number" },
         );
+        const menu =
+          `${t("en").languageMenuTitle}\n\n${t("en").languageMenuHint}`;
+        outboundBodies.push(menu);
+        if (sourceWhatsappAddress && outboundBodies.length) {
+          await sendWhatsappMessages(client, fromNumber, sourceWhatsappAddress, outboundBodies);
+        }
+        return NextResponse.json({ ok: true });
+      }
 
-        if (areas.length > 0) {
-          const areaMenu = areas
-            .map((area, idx) => `${idx + 1}. ${area.area_name}`)
-            .join("\n");
-          outboundReply =
-            `Please select your area by replying with a number:\n${areaMenu}\n\n` +
-            "Example: Reply with 2";
-        } else {
-          outboundReply =
-            "Please type your complaint details. (Area list is currently unavailable.)";
-          await (supabase as any)
-            .from("whatsapp_sessions")
-            .update({
+      /** Language step only for new sessions or explicit awaiting_language (not legacy awaiting_area rows). */
+      const needsLanguage =
+        !existingSession || sessionStep === "awaiting_language";
+
+      if (needsLanguage && !greeting) {
+        if (langChoice) {
+          const lang: WhatsAppLang = langChoice;
+          const copy = t(lang);
+          await (supabase as any).from("whatsapp_sessions").upsert(
+            {
+              phone_number: sourcePhone,
+              tank_id: resolvedTankId,
+              selected_area_id: null,
               step: "awaiting_complaint",
+              language: lang,
               last_inbound_message_sid: messageSid,
               updated_at: new Date().toISOString(),
-            })
-            .eq("phone_number", sourcePhone);
-        }
-      } else if (existingSession.step === "awaiting_area") {
-        if (!selectedIndex || !areas[selectedIndex - 1]) {
-          const areaMenu = areas
-            .map((area, idx) => `${idx + 1}. ${area.area_name}`)
-            .join("\n");
-          outboundReply =
-            `Invalid selection. Please reply with a number from the list:\n${areaMenu}`;
+            },
+            { onConflict: "phone_number" },
+          );
+
+          const tankLines = formatTankListLines(allTanks, lang);
+          const tankChunks = appendSuffixToLastChunk(
+            chunkTankMessages(copy.tankListHeader, copy.tankListContinued, tankLines),
+            copy.complaintAfterTanks,
+          );
+          outboundBodies.push(...tankChunks);
         } else {
-          const selectedArea = areas[selectedIndex - 1];
-          await (supabase as any)
-            .from("whatsapp_sessions")
-            .update({
-              selected_area_id: selectedArea.id,
-              step: "awaiting_complaint",
+          await (supabase as any).from("whatsapp_sessions").upsert(
+            {
+              phone_number: sourcePhone,
+              tank_id: resolvedTankId,
+              selected_area_id: existingSession?.selected_area_id ?? null,
+              step: "awaiting_language",
+              language: null,
               last_inbound_message_sid: messageSid,
               updated_at: new Date().toISOString(),
-            })
-            .eq("phone_number", sourcePhone);
-
-          outboundReply =
-            `Area selected: ${selectedArea.area_name}\n` +
-            "Now please type your complaint details.";
+            },
+            { onConflict: "phone_number" },
+          );
+          outboundBodies.push(
+            `${t("en").languageMenuTitle}\n\n${t("en").languageMenuHint}`,
+          );
+          if (messageBody.length > 0 && !langChoice) {
+            outboundBodies.push(t("en").languageInvalid);
+          }
         }
-      } else {
-        const { data: selectedArea } = existingSession.selected_area_id
-          ? await (supabase as any)
-              .from("tank_areas")
-              .select("id,area_name")
-              .eq("id", existingSession.selected_area_id)
-              .single()
-          : { data: null };
 
+        if (sourceWhatsappAddress && outboundBodies.length) {
+          await sendWhatsappMessages(client, fromNumber, sourceWhatsappAddress, outboundBodies);
+        }
+        return NextResponse.json({ ok: true });
+      }
+
+      const lang: WhatsAppLang =
+        sessionLang && ["hi", "mr", "ur", "en"].includes(sessionLang)
+          ? sessionLang
+          : "en";
+      const copy = t(lang);
+
+      if (sessionStep === "awaiting_complaint" && existingSession) {
         let shouldInsert = true;
         if (messageSid) {
           const { data: existing } = await (supabase as any)
@@ -221,15 +250,12 @@ export async function POST(request: Request) {
         }
 
         if (shouldInsert) {
-          const areaPrefix = selectedArea?.area_name
-            ? `[Area: ${selectedArea.area_name}] `
-            : "";
           await (supabase as any).from("complaints").insert({
             name: "WhatsApp User",
             phone_number: sourcePhone,
             source_phone: sourcePhone,
             tank_id: resolvedTankId,
-            issue: `${areaPrefix}${messageBody || "WhatsApp complaint received."}`,
+            issue: messageBody || "WhatsApp complaint received.",
             report_channel: "whatsapp",
             whatsapp_message_sid: messageSid,
             report_type: "complaint",
@@ -260,26 +286,36 @@ export async function POST(request: Request) {
         formUrl.searchParams.set("tank", String(resolvedTankId));
         formUrl.searchParams.set("channel", "whatsapp");
 
-        outboundReply =
-          "Thank you. Your complaint has been recorded.\n" +
-          `If you want to add more details/image, fill this form: ${formUrl.toString()}`;
+        outboundBodies.push(
+          `${copy.thankYou}\n${formUrl.toString()}`,
+        );
+      } else if (sessionStep === "completed") {
+        /** New complaint cycle: full tank list + complaint prompt (merged when possible). */
+        await (supabase as any).from("whatsapp_sessions").upsert(
+          {
+            phone_number: sourcePhone,
+            tank_id: resolvedTankId,
+            selected_area_id: null,
+            step: "awaiting_complaint",
+            language: lang,
+            last_inbound_message_sid: messageSid,
+            updated_at: new Date().toISOString(),
+          },
+          { onConflict: "phone_number" },
+        );
+        const tankLines = formatTankListLines(allTanks, lang);
+        const tankChunks = appendSuffixToLastChunk(
+          chunkTankMessages(copy.tankListHeader, copy.tankListContinued, tankLines),
+          copy.complaintAfterTanks,
+        );
+        outboundBodies.push(...tankChunks);
       }
 
-      const client = twilio(accountSid, authToken);
-      if (sourceWhatsappAddress && outboundReply) {
-        console.log("[whatsapp:webhook] sending auto-reply", {
-          to: sourceWhatsappAddress,
-          messagePreview: outboundReply.slice(0, 120),
-        });
-        await client.messages.create({
-          from: fromNumber,
-          to: sourceWhatsappAddress,
-          body: outboundReply,
-        });
+      if (sourceWhatsappAddress && outboundBodies.length) {
+        await sendWhatsappMessages(client, fromNumber, sourceWhatsappAddress, outboundBodies);
       }
     }
 
-    console.log("[whatsapp:webhook] completed successfully");
     return NextResponse.json({ ok: true });
   } catch (error) {
     const message = error instanceof Error ? error.message : "Webhook failed.";

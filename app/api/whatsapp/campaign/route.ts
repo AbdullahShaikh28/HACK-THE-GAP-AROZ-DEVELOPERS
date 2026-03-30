@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import twilio from "twilio";
 import { createClient } from "@/lib/supabase/server";
+import { getWhatsappOutboundMediaUrls } from "@/lib/whatsapp-outbound-media";
 
 type CampaignPayload = {
   tankId?: number;
@@ -46,6 +47,7 @@ export async function POST(request: Request) {
     const client = twilio(accountSid, authToken);
     const link = `${appBaseUrl.replace(/\/$/, "")}/complaints?tank=${tankId}&channel=whatsapp`;
     const fullMessage = `${message}\n\nPlease submit your report here: ${link}`;
+    const mediaUrl = getWhatsappOutboundMediaUrls();
 
     let sentCount = 0;
     for (const phone of uniquePhones) {
@@ -53,6 +55,7 @@ export async function POST(request: Request) {
         from: fromNumber,
         to: phone,
         body: fullMessage,
+        ...(mediaUrl.length > 0 ? { mediaUrl } : {}),
       });
       sentCount += 1;
     }

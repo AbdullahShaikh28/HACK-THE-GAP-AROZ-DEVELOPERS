@@ -42,6 +42,16 @@
       "static/chunks/webpack.js",
       "static/chunks/main-app.js",
       "static/chunks/app/(protected)/dashboard/complaints/page.js"
+    ],
+    "/api/whatsapp/webhook/route": [
+      "static/chunks/webpack.js",
+      "static/chunks/main-app.js",
+      "static/chunks/app/api/whatsapp/webhook/route.js"
+    ],
+    "/(public)/complaints/page": [
+      "static/chunks/webpack.js",
+      "static/chunks/main-app.js",
+      "static/chunks/app/(public)/complaints/page.js"
     ]
   }
 }
