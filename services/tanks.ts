@@ -9,6 +9,10 @@ export type WaterTank = {
   longitude: number;
   ward: string;
   areaAddress: string;
+  /** Included in public supply / valve schedule (see Scheduled tab). */
+  scheduled: boolean;
+  /** Earliest upcoming backend-created schedule for this tank (if any). */
+  nextScheduledAtIso: string | null;
 };
 
 export type TankAreaSuggestion = {
@@ -25,16 +29,38 @@ import { createClient } from "@/lib/supabase/server";
 
 export async function getWaterTanks() {
   const supabase = await createClient();
-  const { data, error } = await (supabase as any)
-    .from("water_tanks")
-    .select("*")
-    .order("id", { ascending: true });
+  const [tanksRes, schedulesRes] = await Promise.all([
+    (supabase as any).from("water_tanks").select("*").order("id", { ascending: true }),
+    (supabase as any)
+      .from("valve_opening_schedules")
+      .select("tank_id,status,created_source,schedule_date,open_at")
+      .in("status", ["scheduled", "opened"])
+      .in("created_source", ["backend_ai", "backend_manual"]),
+  ]);
 
-  if (error) {
-    throw new Error(`Failed to load tanks: ${error.message}`);
+  if (tanksRes.error) {
+    throw new Error(`Failed to load tanks: ${tanksRes.error.message}`);
+  }
+  if (schedulesRes.error) {
+    throw new Error(`Failed to load tank schedules: ${schedulesRes.error.message}`);
   }
 
-  return ((data ?? []) as Array<any>).map((row) => {
+  const scheduledTankIds = new Set<number>();
+  const nextScheduledByTank = new Map<number, Date>();
+  const now = new Date();
+  for (const row of (schedulesRes.data ?? []) as Array<any>) {
+    const datePart = String(row.schedule_date ?? "");
+    const timePart = String(row.open_at ?? "00:00:00");
+    const d = new Date(`${datePart}T${timePart}`);
+    if (!Number.isNaN(d.getTime()) && d >= now) {
+      const tid = Number(row.tank_id);
+      scheduledTankIds.add(tid);
+      const existing = nextScheduledByTank.get(tid);
+      if (!existing || d < existing) nextScheduledByTank.set(tid, d);
+    }
+  }
+
+  return ((tanksRes.data ?? []) as Array<any>).map((row) => {
     const total = Number(row.capacity_lakh_liters ?? 0);
     const used = Number(row.capacity_used_lakh_liters ?? 0);
 
@@ -50,6 +76,9 @@ export async function getWaterTanks() {
       longitude: row.longitude,
       ward: row.ward,
       areaAddress: row.area_address,
+      // Prefer live backend scheduling rows; keep legacy flag as fallback.
+      scheduled: scheduledTankIds.has(Number(row.id)) || Boolean(row.scheduled),
+      nextScheduledAtIso: nextScheduledByTank.get(Number(row.id))?.toISOString() ?? null,
     };
   }) satisfies WaterTank[];
 }

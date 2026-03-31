@@ -12,6 +12,7 @@ import {
 } from "@/lib/whatsapp-i18n";
 import { getWhatsappOutboundMediaUrls } from "@/lib/whatsapp-outbound-media";
 import { normalizePhone, toWhatsappAddress } from "@/lib/whatsapp-phone";
+import { tankDropdownLabel } from "@/lib/whatsapp-tank-lines";
 
 function inferTankIdFromBody(body: string) {
   const match = body.match(/tank[\s:#-]*(\d+)/i);
@@ -133,17 +134,17 @@ export async function POST(request: Request) {
       let sessionStep = existingSession?.step as string | undefined;
       const sessionLang = existingSession?.language as WhatsAppLang | null | undefined;
 
-      /** Zone sub-step removed; move old sessions to complaint entry. */
+      /** Legacy awaiting_area → user must pick tank before complaint text. */
       if (sessionStep === "awaiting_area") {
         await (supabase as any)
           .from("whatsapp_sessions")
           .update({
-            step: "awaiting_complaint",
+            step: "awaiting_tank",
             selected_area_id: null,
             updated_at: new Date().toISOString(),
           })
           .eq("phone_number", sourcePhone);
-        sessionStep = "awaiting_complaint";
+        sessionStep = "awaiting_tank";
       }
 
       /** Reset to language selection (e.g. user sent "hi"). */
@@ -182,7 +183,7 @@ export async function POST(request: Request) {
               phone_number: sourcePhone,
               tank_id: resolvedTankId,
               selected_area_id: null,
-              step: "awaiting_complaint",
+              step: "awaiting_tank",
               language: lang,
               last_inbound_message_sid: messageSid,
               updated_at: new Date().toISOString(),
@@ -193,7 +194,7 @@ export async function POST(request: Request) {
           const tankLines = formatTankListLines(allTanks, lang);
           const tankChunks = appendSuffixToLastChunk(
             chunkTankMessages(copy.tankListHeader, copy.tankListContinued, tankLines),
-            copy.complaintAfterTanks,
+            copy.tankPickPrompt,
           );
           outboundBodies.push(...tankChunks);
         } else {
@@ -223,6 +224,53 @@ export async function POST(request: Request) {
         return NextResponse.json({ ok: true });
       }
 
+      /** Reply must be a tank ID from the list; then we ask for complaint text. */
+      if (sessionStep === "awaiting_tank" && existingSession) {
+        const langForTank: WhatsAppLang =
+          sessionLang && ["hi", "mr", "ur", "en"].includes(sessionLang)
+            ? sessionLang
+            : "en";
+        const copy = t(langForTank);
+        const trimmed = messageBody.trim();
+        if (!trimmed || !/^\d+$/.test(trimmed)) {
+          outboundBodies.push(copy.tankPickInvalid);
+        } else {
+          const tankIdReply = Number(trimmed);
+          const selectedTank = allTanks.find((row) => row.id === tankIdReply);
+          if (!selectedTank) {
+            outboundBodies.push(copy.tankPickInvalid);
+          } else {
+            await (supabase as any).from("whatsapp_sessions").upsert(
+              {
+                phone_number: sourcePhone,
+                tank_id: selectedTank.id,
+                selected_area_id: null,
+                step: "awaiting_complaint",
+                language: langForTank,
+                last_inbound_message_sid: messageSid,
+                updated_at: new Date().toISOString(),
+              },
+              { onConflict: "phone_number" },
+            );
+            const areaLabel = tankDropdownLabel(
+              {
+                id: selectedTank.id,
+                name: selectedTank.name,
+                ward: selectedTank.ward,
+              },
+              langForTank,
+            );
+            outboundBodies.push(
+              `${copy.areaSelectedLine.replace("%s", areaLabel)}\n\n${copy.complaintPrompt}`,
+            );
+          }
+        }
+        if (sourceWhatsappAddress && outboundBodies.length) {
+          await sendWhatsappMessages(client, fromNumber, sourceWhatsappAddress, outboundBodies);
+        }
+        return NextResponse.json({ ok: true });
+      }
+
       const lang: WhatsAppLang =
         sessionLang && ["hi", "mr", "ur", "en"].includes(sessionLang)
           ? sessionLang
@@ -240,12 +288,17 @@ export async function POST(request: Request) {
           shouldInsert = !existing?.length;
         }
 
+        const complaintTankId =
+          typeof existingSession.tank_id === "number" && Number.isFinite(existingSession.tank_id)
+            ? existingSession.tank_id
+            : resolvedTankId;
+
         if (shouldInsert) {
           await (supabase as any).from("complaints").insert({
             name: "WhatsApp User",
             phone_number: sourcePhone,
             source_phone: sourcePhone,
-            tank_id: resolvedTankId,
+            tank_id: complaintTankId,
             issue: messageBody || "WhatsApp complaint received.",
             report_channel: "whatsapp",
             whatsapp_message_sid: messageSid,
@@ -255,7 +308,7 @@ export async function POST(request: Request) {
 
         await (supabase as any).from("tank_contacts").upsert(
           {
-            tank_id: resolvedTankId,
+            tank_id: complaintTankId,
             name: "WhatsApp User",
             phone_number: sourcePhone,
             source: "complaint",
@@ -281,13 +334,13 @@ export async function POST(request: Request) {
           `${copy.thankYou}\n${formUrl.toString()}`,
         );
       } else if (sessionStep === "completed") {
-        /** New complaint cycle: full tank list + complaint prompt (merged when possible). */
+        /** New complaint cycle: pick tank again, then complaint text. */
         await (supabase as any).from("whatsapp_sessions").upsert(
           {
             phone_number: sourcePhone,
             tank_id: resolvedTankId,
             selected_area_id: null,
-            step: "awaiting_complaint",
+            step: "awaiting_tank",
             language: lang,
             last_inbound_message_sid: messageSid,
             updated_at: new Date().toISOString(),
@@ -297,7 +350,7 @@ export async function POST(request: Request) {
         const tankLines = formatTankListLines(allTanks, lang);
         const tankChunks = appendSuffixToLastChunk(
           chunkTankMessages(copy.tankListHeader, copy.tankListContinued, tankLines),
-          copy.complaintAfterTanks,
+          copy.tankPickPrompt,
         );
         outboundBodies.push(...tankChunks);
       }

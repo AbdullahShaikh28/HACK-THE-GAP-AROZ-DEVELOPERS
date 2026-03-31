@@ -3,7 +3,7 @@ import { FrontendHeader } from "@/components/FrontendHeader";
 
 export default function ChatPage() {
   return (
-    <main className="min-h-screen bg-[#f2f5f9] text-[#1a2535]">
+    <main className="flex flex-1 flex-col bg-[#f2f5f9] text-[#1a2535]">
       <FrontendHeader active="chat" />
       <div className="mx-auto flex w-full max-w-[1280px] flex-col gap-8 px-6 py-10">
         <div className="space-y-2">

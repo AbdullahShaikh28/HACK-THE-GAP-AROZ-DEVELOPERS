@@ -1,5 +1,8 @@
 {
+  "/(protected)/dashboard/zone-contacts/page": "app/(protected)/dashboard/zone-contacts/page.js",
+  "/(protected)/dashboard/complaints/page": "app/(protected)/dashboard/complaints/page.js",
+  "/(protected)/dashboard/analytics/page": "app/(protected)/dashboard/analytics/page.js",
+  "/(protected)/dashboard/assigned-tank/page": "app/(protected)/dashboard/assigned-tank/page.js",
   "/(protected)/dashboard/map/page": "app/(protected)/dashboard/map/page.js",
-  "/(protected)/dashboard/survey/page": "app/(protected)/dashboard/survey/page.js",
-  "/(protected)/dashboard/valve-control/page": "app/(protected)/dashboard/valve-control/page.js"
+  "/(public)/complaints/page": "app/(public)/complaints/page.js"
 }

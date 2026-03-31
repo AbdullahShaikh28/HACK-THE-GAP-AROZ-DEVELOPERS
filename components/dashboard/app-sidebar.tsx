@@ -18,7 +18,6 @@ import {
   SidebarMenuButton,
   SidebarMenuItem,
   SidebarRail,
-  SidebarSeparator,
 } from "@/components/ui/sidebar";
 import { SignOutButton } from "@/components/SignOutButton";
 
@@ -250,87 +249,6 @@ function IconAlerts() {
         strokeLinecap="round"
       />
       <circle cx="8" cy="12" r="0.8" fill="currentColor" />
-    </svg>
-  );
-}
-
-function IconUsers() {
-  return (
-    <svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden>
-      <circle cx="6" cy="5" r="2.5" stroke="currentColor" strokeWidth="1.4" />
-      <path
-        d="M1 14 Q1 10 6 10 Q11 10 11 14"
-        stroke="currentColor"
-        strokeWidth="1.4"
-        strokeLinecap="round"
-        fill="none"
-      />
-      <path
-        d="M12 7 Q13.5 7 13.5 5.5 Q13.5 4 12 4"
-        stroke="currentColor"
-        strokeWidth="1.4"
-        strokeLinecap="round"
-      />
-      <path
-        d="M12 10 Q15 10 15 14"
-        stroke="currentColor"
-        strokeWidth="1.4"
-        strokeLinecap="round"
-        fill="none"
-      />
-    </svg>
-  );
-}
-
-function IconSettings() {
-  return (
-    <svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden>
-      <circle cx="8" cy="8" r="2.5" stroke="currentColor" strokeWidth="1.4" />
-      <path
-        d="M8 1 L8 3 M8 13 L8 15 M1 8 L3 8 M13 8 L15 8 M2.93 2.93 L4.34 4.34 M11.66 11.66 L13.07 13.07 M2.93 13.07 L4.34 11.66 M11.66 4.34 L13.07 2.93"
-        stroke="currentColor"
-        strokeWidth="1.4"
-        strokeLinecap="round"
-      />
-    </svg>
-  );
-}
-
-function IconDocs() {
-  return (
-    <svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden>
-      <path
-        d="M3 2 L3 14 L13 14 L13 5 L10 2 Z"
-        stroke="currentColor"
-        strokeWidth="1.4"
-        strokeLinejoin="round"
-        fill="none"
-      />
-      <path
-        d="M10 2 L10 5 L13 5"
-        stroke="currentColor"
-        strokeWidth="1.4"
-        strokeLinejoin="round"
-        fill="none"
-      />
-      <line
-        x1="5.5"
-        y1="8"
-        x2="10.5"
-        y2="8"
-        stroke="currentColor"
-        strokeWidth="1.2"
-        strokeLinecap="round"
-      />
-      <line
-        x1="5.5"
-        y1="10.5"
-        x2="10.5"
-        y2="10.5"
-        stroke="currentColor"
-        strokeWidth="1.2"
-        strokeLinecap="round"
-      />
     </svg>
   );
 }
@@ -641,52 +559,6 @@ export function AppSidebar() {
                     </Link>
                   </SidebarMenuButton>
                 </SidebarMenuItem>
-            </SidebarMenu>
-          </SidebarGroupContent>
-        </SidebarGroup>
-
-        <SidebarSeparator />
-
-        <SidebarGroup>
-          <SidebarGroupLabel>System</SidebarGroupLabel>
-          <SidebarGroupContent>
-            <SidebarMenu>
-              <SidebarMenuItem>
-                <SidebarMenuButton
-                  type="button"
-                  tooltip="Users"
-                  onClick={(e) => e.preventDefault()}
-                >
-                  <span className="ds-menu-icon">
-                    <IconUsers />
-                  </span>
-                  <span className="ds-menu-label">Users</span>
-                </SidebarMenuButton>
-              </SidebarMenuItem>
-              <SidebarMenuItem>
-                <SidebarMenuButton
-                  type="button"
-                  tooltip="Settings"
-                  onClick={(e) => e.preventDefault()}
-                >
-                  <span className="ds-menu-icon">
-                    <IconSettings />
-                  </span>
-                  <span className="ds-menu-label">Settings</span>
-                </SidebarMenuButton>
-              </SidebarMenuItem>
-              <SidebarMenuItem>
-                <SidebarMenuButton
-                  type="button"
-                  tooltip="Docs"
-                  onClick={(e) => e.preventDefault()}
-                >
-                  <span className="ds-menu-icon">
-                    <IconDocs />
-                  </span>
-                  <span className="ds-menu-label">Docs</span>
-                </SidebarMenuButton>
-              </SidebarMenuItem>
             </SidebarMenu>
           </SidebarGroupContent>
         </SidebarGroup>

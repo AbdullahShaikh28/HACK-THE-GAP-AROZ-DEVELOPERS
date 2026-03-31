@@ -45,13 +45,13 @@ export default async function ComplaintsPage() {
         .single()
     : { data: null };
 
-  const { data: complaints } = profile?.tank_id
+  const { data: complaints, error: complaintsError } = profile?.tank_id
     ? await (supabase as any)
         .from("complaints")
-        .select("id,name,phone_number,tank_id,issue,image_url,status,priority,created_at")
+        .select("*")
         .eq("tank_id", profile.tank_id)
         .order("created_at", { ascending: false })
-    : { data: [] };
+    : { data: [], error: null };
 
   return (
     <div className="flex flex-col gap-6">
@@ -70,10 +70,15 @@ export default async function ComplaintsPage() {
           {(complaints ?? []).length === 1 ? "" : "s"}
           {profile?.tank_id ? "" : " — assign a tank to see complaints."}
         </p>
+        {complaintsError ? (
+          <p className="mt-2 text-sm text-red-600">
+            Could not load complaints: {complaintsError.message}
+          </p>
+        ) : null}
 
         <div className="mt-4">
           <ComplaintsList
-            complaints={(complaints ?? []) as Array<any>}
+            complaints={(complaints ?? []) as Array<Record<string, unknown>>}
             updateComplaintMeta={updateComplaintMeta}
           />
         </div>

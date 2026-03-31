@@ -29,6 +29,30 @@ function normalizeFieldSurveyRow(row: Record<string, unknown>): FieldSurveyListI
   if (typeof zn === "number" && zn >= 1 && zn <= 5) zone_number = zn;
   else if (typeof zn === "string" && /^[1-5]$/.test(zn)) zone_number = Number(zn);
 
+  const lcs = row.location_check_status;
+  const location_check_status =
+    lcs === "pass" || lcs === "fail" || lcs === "unavailable" ? lcs : null;
+
+  const dmTank = row.distance_to_tank_m;
+  const distance_to_tank_m =
+    typeof dmTank === "number" && !Number.isNaN(dmTank) ? dmTank : null;
+
+  const ail = row.ai_issue_label;
+  const ai_issue_label = ail != null && String(ail).trim() ? String(ail).trim() : null;
+
+  const capAddr = row.capture_address;
+  const capture_address =
+    capAddr != null && String(capAddr).trim() ? String(capAddr).trim() : null;
+
+  const numOrNull = (v: unknown): number | null => {
+    if (typeof v === "number" && Number.isFinite(v)) return v;
+    if (typeof v === "string" && v.trim() !== "") {
+      const n = Number(v);
+      return Number.isFinite(n) ? n : null;
+    }
+    return null;
+  };
+
   return {
     id: String(row.id ?? ""),
     respondent_name: String(row.respondent_name ?? ""),
@@ -43,6 +67,13 @@ function normalizeFieldSurveyRow(row: Record<string, unknown>): FieldSurveyListI
     report_channel,
     language,
     zone_number,
+    location_check_status,
+    distance_to_tank_m,
+    ai_issue_label,
+    photo_latitude: numOrNull(row.photo_latitude),
+    photo_longitude: numOrNull(row.photo_longitude),
+    photo_location_accuracy_m: numOrNull(row.photo_location_accuracy_m),
+    capture_address,
     created_at: String(row.created_at ?? ""),
   };
 }

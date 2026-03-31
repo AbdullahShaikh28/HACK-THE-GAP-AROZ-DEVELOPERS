@@ -19,7 +19,7 @@ export default async function SupplyReportPage({
   const channel = query.channel === "whatsapp" ? "whatsapp" : "web";
 
   return (
-    <main className="min-h-screen bg-[#f2f5f9] text-[#1a2535]">
+    <main className="flex flex-1 flex-col bg-[#f2f5f9] text-[#1a2535]">
       <FrontendHeader active="supply_report" />
       <div className="mx-auto w-full max-w-[960px] px-6 py-10">
         <div className="mb-8 space-y-2">
@@ -37,6 +37,8 @@ export default async function SupplyReportPage({
             id: tank.id,
             name: tank.name,
             ward: tank.ward,
+            latitude: tank.latitude,
+            longitude: tank.longitude,
           }))}
           initialPhoneNumber={phone}
           initialTankId={tankId}

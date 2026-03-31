@@ -2,17 +2,18 @@
 
 import { useMemo, useState } from "react";
 import { createClient } from "@/lib/supabase/client";
+import { computeLocationCheck, getPhotoMaxDistanceM } from "@/lib/geo";
 import { FORM_LANGUAGE_OPTIONS } from "@/lib/form-language-options";
 import { supplyReportT } from "@/lib/supply-report-i18n";
 import { tankDropdownLabel } from "@/lib/whatsapp-tank-lines";
 import type { ChatLanguage } from "@/types";
 
-const COMPLAINTS_BUCKET = process.env.NEXT_PUBLIC_COMPLAINTS_BUCKET ?? "imaged";
-
 type TankOption = {
   id: number;
   name: string;
   ward: string;
+  latitude: number;
+  longitude: number;
 };
 
 type SupplyReportFormProps = {
@@ -41,7 +42,6 @@ export function SupplyReportForm({
   const [arrivalTime, setArrivalTime] = useState("");
   const [durationMinutes, setDurationMinutes] = useState("");
   const [pressureLevel, setPressureLevel] = useState<"" | "low" | "medium" | "high">("");
-  const [imageFile, setImageFile] = useState<File | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [message, setMessage] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -55,13 +55,7 @@ export function SupplyReportForm({
     setMessage(null);
     setError(null);
 
-    if (
-      !pressureLevel ||
-      !arrivalDate.trim() ||
-      !arrivalTime.trim() ||
-      durationMinutes === "" ||
-      !imageFile
-    ) {
+    if (!pressureLevel || !arrivalDate.trim() || !arrivalTime.trim() || durationMinutes === "") {
       setError(copy.errors.incomplete);
       setIsSubmitting(false);
       return;
@@ -70,34 +64,17 @@ export function SupplyReportForm({
     try {
       const supabase = createClient();
 
-      const extension = imageFile.name.split(".").pop() ?? "jpg";
-      const filePath = `field-surveys/${Date.now()}-${Math.random().toString(36).slice(2)}.${extension}`;
-      const { error: uploadError } = await (supabase as any)
-        .storage
-        .from(COMPLAINTS_BUCKET)
-        .upload(filePath, imageFile, {
-          cacheControl: "3600",
-          upsert: false,
-        });
-
-      if (uploadError) {
-        if (uploadError.message?.toLowerCase().includes("bucket not found")) {
-          throw new Error(
-            `Bucket "${COMPLAINTS_BUCKET}" not found. Create it in Supabase Storage or set NEXT_PUBLIC_COMPLAINTS_BUCKET.`,
-          );
-        }
-        throw new Error(uploadError.message);
-      }
-
-      const { data: publicData } = (supabase as any)
-        .storage
-        .from(COMPLAINTS_BUCKET)
-        .getPublicUrl(filePath);
-
-      const imageUrl = publicData?.publicUrl ?? null;
-      if (!imageUrl) {
-        throw new Error(copy.errors.imageUrl);
-      }
+      const selectedTank = tanks.find((t) => t.id === Number(tankId));
+      const maxM = getPhotoMaxDistanceM();
+      const loc = selectedTank
+        ? computeLocationCheck(
+            null,
+            null,
+            selectedTank.latitude,
+            selectedTank.longitude,
+            maxM,
+          )
+        : { distanceM: null as number | null, status: "unavailable" as const };
 
       const notesText = details.trim();
       if (!notesText) {
@@ -120,10 +97,19 @@ export function SupplyReportForm({
           duration_minutes: duration,
           pressure_level: pressureLevel,
           notes: notesText,
-          image_url: imageUrl,
+          image_url: null,
           submission_kind: "supply_report",
           report_channel: initialChannel,
           language: formLang,
+          photo_latitude: null,
+          photo_longitude: null,
+          photo_location_accuracy_m: null,
+          distance_to_tank_m: loc.distanceM,
+          location_check_status: loc.status,
+          capture_address: null,
+          ai_issue_label: null,
+          ai_issue_raw: null,
+          ai_analyzed_at: null,
         });
 
       if (insertError) {
@@ -148,7 +134,6 @@ export function SupplyReportForm({
       setArrivalTime("");
       setDurationMinutes("");
       setPressureLevel("");
-      setImageFile(null);
       if (initialPhoneNumber) setPhoneNumber(initialPhoneNumber);
       if (initialTankId) setTankId(String(initialTankId));
       else if (tanks[0]) setTankId(String(tanks[0].id));
@@ -331,20 +316,6 @@ export function SupplyReportForm({
             <option value="high">{t.pressureHigh}</option>
           </select>
         </div>
-      </div>
-
-      <div className="space-y-1">
-        <label htmlFor="sr_image" className="text-sm font-medium text-[#1a2535]">
-          {t.uploadImage}
-        </label>
-        <input
-          id="sr_image"
-          type="file"
-          accept="image/*"
-          required
-          onChange={(event) => setImageFile(event.target.files?.[0] ?? null)}
-          className="block w-full text-sm text-[#1a2535]"
-        />
       </div>
 
       {error ? <p className="text-sm text-red-600">{error}</p> : null}
