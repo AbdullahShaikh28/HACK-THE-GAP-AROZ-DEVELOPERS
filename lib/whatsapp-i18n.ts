@@ -47,6 +47,11 @@ type Copy = {
   complaintPrompt: string;
   /** Shown after the full tank reference list; then user replies with complaint text. */
   complaintAfterTanks: string;
+  /** After tank list: user must reply with a tank ID from the list before typing the complaint. */
+  tankPickPrompt: string;
+  tankPickInvalid: string;
+  /** Use %s for the localized tank/area label (e.g. after tankDropdownLabel). */
+  areaSelectedLine: string;
   thankYou: string;
   tankListHeader: string;
   tankListContinued: string;
@@ -69,6 +74,11 @@ const COPY: Record<WhatsAppLang, Copy> = {
     complaintPrompt: "Now please type your complaint details.",
     complaintAfterTanks:
       "The list above is for reference only (tank IDs).\n\nPlease type your complaint details:",
+    tankPickPrompt:
+      "Reply with the tank number from the list above (the number at the start of the line for your area).",
+    tankPickInvalid:
+      "That number does not match any tank in the list. Reply with one of the tank numbers shown above.",
+    areaSelectedLine: "Area selected: %s",
     thankYou:
       "Thank you. Your complaint has been recorded.\nIf you want to add more details or an image, use this link:",
     tankListHeader: "All water tanks (reference):",
@@ -91,6 +101,11 @@ const COPY: Record<WhatsAppLang, Copy> = {
     complaintPrompt: "अब कृपया अपनी शिकायत विवरण में लिखें।",
     complaintAfterTanks:
       "ऊपर की सूची केवल संदर्भ (टंकी ID) के लिए है।\n\nअब अपनी शिकायत विवरण में लिखें:",
+    tankPickPrompt:
+      "ऊपर सूची में से अपनी टंकी का नंबर भेजें (प्रत्येक पंक्ति के आगे वाला नंबर)।",
+    tankPickInvalid:
+      "यह नंबर सूची में नहीं है। ऊपर दिखाए गए टंकी नंबरों में से एक भेजें।",
+    areaSelectedLine: "क्षेत्र चयनित: %s",
     thankYou:
       "धन्यवाद। आपकी शिकायत दर्ज कर ली गई है।\nअधिक विवरण या फोटो के लिए यह लिंक खोलें:",
     tankListHeader: "सभी जल टंकियाँ (संदर्भ):",
@@ -113,6 +128,11 @@ const COPY: Record<WhatsAppLang, Copy> = {
     complaintPrompt: "आता तुमच्या तक्रारीचे तपशील टाइप करा.",
     complaintAfterTanks:
       "वरील यादी फक्त संदर्भासाठी आहे (टाकी ID).\n\nआता तुमच्या तक्रारीचे तपशील टाइप करा:",
+    tankPickPrompt:
+      "वरील यादीतून तुमच्या टाकीचा क्रमांक पाठवा (प्रत्येक ओळीपुढे दिलेला नंबर).",
+    tankPickInvalid:
+      "हा नंबर यादीत नाही. वरील दिसणाऱ्या टाकी क्रमांकांपैकी एक पाठवा.",
+    areaSelectedLine: "क्षेत्र निवडले: %s",
     thankYou:
       "धन्यवाद. तुमची तक्रार नोंदवली गेली.\nअधिक माहिती किंवा फोटोसाठी हा दुवा वापरा:",
     tankListHeader: "सर्व पाण्याचे टाके (संदर्भ):",
@@ -135,6 +155,11 @@ const COPY: Record<WhatsAppLang, Copy> = {
     complaintPrompt: "اب اپنی شکایت کی تفصیل لکھیں۔",
     complaintAfterTanks:
       "اوپر کی فہرست صرف حوالے کے لیے ہے (ٹینک ID)۔\n\nاب اپنی شکایت کی تفصیل لکھیں:",
+    tankPickPrompt:
+      "اوپر فہرست میں سے اپنے ٹینک کا نمبر بھیجیں (ہر سطر کے شروع والا نمبر)۔",
+    tankPickInvalid:
+      "یہ نمبر فہرست میں نہیں۔ اوپر دکھائے گئے ٹینک نمبروں میں سے ایک بھیجیں۔",
+    areaSelectedLine: "علاقہ منتخب: %s",
     thankYou:
       "شکریہ۔ آپ کی شکایت درج کر لی گئی۔\nمزید تفصیل یا تصویر کے لیے یہ لنک کھولیں:",
     tankListHeader: "تمام پانی کے ٹینک (حوالہ):",

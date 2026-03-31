@@ -1,3 +1,6 @@
+import { FieldSurveyPhotoCell } from "@/components/dashboard/FieldSurveyPhotoCell";
+import { CaptureLocationTableLine } from "@/components/dashboard/CaptureLocationTableLine";
+import { locationCheckTableSummary } from "@/lib/location-check-display";
 import { FORM_LANGUAGE_OPTIONS } from "@/lib/form-language-options";
 import {
   Table,
@@ -22,6 +25,13 @@ export type FieldSurveyListItem = {
   report_channel: "web" | "whatsapp" | null;
   language: "en" | "hi" | "mr" | "ur" | null;
   zone_number: number | null;
+  location_check_status: "pass" | "fail" | "unavailable" | null;
+  distance_to_tank_m: number | null;
+  ai_issue_label: string | null;
+  photo_latitude: number | null;
+  photo_longitude: number | null;
+  photo_location_accuracy_m: number | null;
+  capture_address: string | null;
   created_at: string;
 };
 
@@ -111,6 +121,8 @@ export function FieldSurveysList({ rows }: { rows: FieldSurveyListItem[] }) {
             <TableHead>Language</TableHead>
             <TableHead className="min-w-[10rem] max-w-sm">Notes</TableHead>
             <TableHead>Photo</TableHead>
+            <TableHead>Location / review</TableHead>
+            <TableHead>AI tag</TableHead>
             <TableHead>Channel</TableHead>
           </TableRow>
         </TableHeader>
@@ -146,18 +158,34 @@ export function FieldSurveysList({ rows }: { rows: FieldSurveyListItem[] }) {
                 </span>
               </TableCell>
               <TableCell>
-                {row.image_url ? (
-                  <a
-                    href={row.image_url}
-                    target="_blank"
-                    rel="noreferrer"
-                    className="text-sm font-medium text-primary underline underline-offset-2"
+                <FieldSurveyPhotoCell row={row} />
+              </TableCell>
+              <TableCell className="max-w-[11rem] text-sm">
+                <div className="flex flex-col gap-0.5">
+                  <span
+                    className={
+                      row.location_check_status === "pass"
+                        ? "whitespace-nowrap font-medium text-emerald-700"
+                        : row.location_check_status === "fail"
+                          ? "whitespace-nowrap font-medium text-rose-700"
+                          : "whitespace-nowrap text-muted-foreground"
+                    }
+                    title="Automated distance check vs tank map point"
                   >
-                    View
-                  </a>
-                ) : (
-                  <span className="text-sm text-muted-foreground">—</span>
-                )}
+                    {locationCheckTableSummary(
+                      row.location_check_status,
+                      row.distance_to_tank_m,
+                    )}
+                  </span>
+                  <CaptureLocationTableLine
+                    captureAddress={row.capture_address}
+                    photoLatitude={row.photo_latitude}
+                    photoLongitude={row.photo_longitude}
+                  />
+                </div>
+              </TableCell>
+              <TableCell className="text-sm text-muted-foreground">
+                {row.ai_issue_label?.trim() ? row.ai_issue_label : "—"}
               </TableCell>
               <TableCell className="text-sm text-muted-foreground">
                 {row.report_channel === "whatsapp"

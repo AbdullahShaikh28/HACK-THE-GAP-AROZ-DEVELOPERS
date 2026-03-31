@@ -1,4 +1,5 @@
 import { Montserrat, Noto_Sans, Tiro_Devanagari_Hindi } from "next/font/google";
+import type { TanksInventoryFilter } from "@/components/TanksInventory";
 import { FrontendHeader } from "@/components/FrontendHeader";
 import { TanksInventory } from "@/components/TanksInventory";
 import { TankAreaSuggestions } from "@/components/tanks/TankAreaSuggestions";
@@ -27,7 +28,33 @@ const tiro = Tiro_Devanagari_Hindi({
   variable: "--font-tiro",
 });
 
-export default async function TanksPage() {
+type TanksPageProps = {
+  searchParams?: Promise<Record<string, string | string[] | undefined>>;
+};
+
+function tabToFilter(tab: string | undefined | null): TanksInventoryFilter {
+  if (!tab) return "ALL";
+  const key = tab.toLowerCase();
+  const map: Record<string, TanksInventoryFilter> = {
+    all: "ALL",
+    esr: "ESR",
+    gsr: "GSR",
+    sump: "Sump",
+    scheduled: "SCHEDULED",
+  };
+  return map[key] ?? "ALL";
+}
+
+export default async function TanksPage({ searchParams }: TanksPageProps) {
+  const query = (await searchParams) ?? {};
+  const rawTab = query.tab;
+  const tab = Array.isArray(rawTab) ? rawTab[0] : rawTab;
+  const initialFilter = tabToFilter(tab);
+  const headerActive =
+    typeof tab === "string" && tab.toLowerCase() === "scheduled"
+      ? "scheduled"
+      : "tanks";
+
   const waterTanks = await getWaterTanks();
   const areaSuggestions = await getTankAreaSuggestions();
   const waterTankSummary = buildWaterTankSummary(waterTanks);
@@ -35,10 +62,10 @@ export default async function TanksPage() {
 
   return (
     <main
-      className={`${montserrat.variable} ${notoSans.variable} ${tiro.variable} min-h-screen bg-[#f2f5f9] text-[#1a2535]`}
+      className={`${montserrat.variable} ${notoSans.variable} ${tiro.variable} flex flex-1 flex-col bg-[#f2f5f9] text-[#1a2535]`}
       style={{ fontFamily: "var(--font-noto-sans)" }}
     >
-      <FrontendHeader active="tanks" />
+      <FrontendHeader active={headerActive} />
 
       <section className="relative overflow-hidden bg-[linear-gradient(135deg,#1a3a6e_0%,#1e4d8c_55%,#0f2a52_100%)] px-6 py-10 text-white">
         <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(ellipse_600px_300px_at_80%_50%,rgba(232,97,10,0.18)_0%,transparent_70%)]" />
@@ -217,7 +244,11 @@ export default async function TanksPage() {
           </div>
         </section>
 
-        <TanksInventory tanks={waterTanks} />
+        <TanksInventory
+          key={tab ?? "all"}
+          tanks={waterTanks}
+          initialFilter={initialFilter}
+        />
         <TankAreaSuggestions tanks={waterTanks} suggestions={areaSuggestions} />
       </div>
     </main>

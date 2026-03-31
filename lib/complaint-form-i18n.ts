@@ -8,13 +8,6 @@ export type ComplaintFormStrings = {
   tank: string;
   complaintDetails: string;
   complaintPlaceholder: string;
-  arrivalTime: string;
-  durationMinutes: string;
-  pressure: string;
-  selectPressure: string;
-  pressureLow: string;
-  pressureMedium: string;
-  pressureHigh: string;
   uploadImage: string;
   submit: string;
   submitting: string;
@@ -22,7 +15,6 @@ export type ComplaintFormStrings = {
   errors: {
     incomplete: string;
     issueRequired: string;
-    durationInvalid: string;
     submitFailed: string;
     imageUrl: string;
   };
@@ -36,23 +28,14 @@ const en: ComplaintFormStrings = {
   phone: "Phone number",
   tank: "Tank",
   complaintDetails: "Complaint details",
-  complaintPlaceholder: "Describe the issue (timing, pressure, location, etc.).",
-  arrivalTime: "Arrival time",
-  durationMinutes: "Duration (minutes)",
-  pressure: "Pressure",
-  selectPressure: "Select pressure",
-  pressureLow: "Low",
-  pressureMedium: "Medium",
-  pressureHigh: "High",
+  complaintPlaceholder: "Describe the issue (what happened, where, when, etc.).",
   uploadImage: "Upload image",
   submit: "Submit complaint",
   submitting: "Submitting…",
   success: "Complaint submitted successfully.",
   errors: {
-    incomplete:
-      "Please complete all fields: pressure, arrival time, duration, photo, and complaint details.",
+    incomplete: "Please add your complaint details, attach a photo, and fill name, phone, and tank.",
     issueRequired: "Complaint details are required.",
-    durationInvalid: "Duration must be a valid non-negative number.",
     submitFailed: "Failed to submit complaint.",
     imageUrl: "Could not get image URL after upload.",
   },
@@ -66,23 +49,15 @@ const hi: ComplaintFormStrings = {
   phone: "फ़ोन नंबर",
   tank: "टैंक",
   complaintDetails: "शिकायत विवरण",
-  complaintPlaceholder: "समस्या बताएँ (समय, दबाव, स्थान, आदि)।",
-  arrivalTime: "आगमन समय",
-  durationMinutes: "अवधि (मिनट)",
-  pressure: "दबाव",
-  selectPressure: "दबाव चुनें",
-  pressureLow: "कम",
-  pressureMedium: "मध्यम",
-  pressureHigh: "ऊँचा",
+  complaintPlaceholder: "समस्या बताएँ (क्या हुआ, कहाँ, कब, आदि)।",
   uploadImage: "छवि अपलोड करें",
   submit: "शिकायत दर्ज करें",
   submitting: "जमा हो रहा है…",
   success: "शिकायत सफलतापूर्वक दर्ज हो गई।",
   errors: {
     incomplete:
-      "कृपया सभी फ़ील्ड भरें: दबाव, आगमन समय, अवधि, फ़ोटो और शिकायत विवरण।",
+      "कृपया शिकायत विवरण, फ़ोटो, नाम, फ़ोन और टैंक भरें।",
     issueRequired: "शिकायत विवरण आवश्यक है।",
-    durationInvalid: "अवधि एक वैध गैर-ऋणात्मक संख्या होनी चाहिए।",
     submitFailed: "शिकायत दर्ज नहीं हो सकी।",
     imageUrl: "अपलोड के बाद छवि URL प्राप्त नहीं हो सका।",
   },
@@ -96,23 +71,14 @@ const mr: ComplaintFormStrings = {
   phone: "फोन नंबर",
   tank: "टाके",
   complaintDetails: "तक्रार तपशील",
-  complaintPlaceholder: "समस्येचे वर्णन करा (वेळ, दाब, स्थान इ.).",
-  arrivalTime: "आगमन वेळ",
-  durationMinutes: "कालावधी (मिनिटे)",
-  pressure: "दाब",
-  selectPressure: "दाब निवडा",
-  pressureLow: "कमी",
-  pressureMedium: "मध्यम",
-  pressureHigh: "जास्त",
+  complaintPlaceholder: "समस्येचे वर्णन करा (काय झाले, कुठे, केव्हा इ.).",
   uploadImage: "प्रतिमा अपलोड करा",
   submit: "तक्रार नोंदवा",
   submitting: "सबमिट होत आहे…",
   success: "तक्रार यशस्वीरित्या नोंदवली.",
   errors: {
-    incomplete:
-      "कृपया सर्व घरे भरा: दाब, आगमन वेळ, कालावधी, फोटो आणि तक्रार तपशील.",
+    incomplete: "कृपया तक्रार तपशील, फोटो, नाव, फोन आणि टाके भरा.",
     issueRequired: "तक्रार तपशील आवश्यक आहे.",
-    durationInvalid: "कालावधी शून्य किंवा त्याहून जास्त असलेली वैध संख्या असावी.",
     submitFailed: "तक्रार नोंदवता आली नाही.",
     imageUrl: "अपलोडनंतर प्रतिमा URL मिळाला नाही.",
   },
@@ -126,23 +92,15 @@ const ur: ComplaintFormStrings = {
   phone: "فون نمبر",
   tank: "ٹینک",
   complaintDetails: "شکایت کی تفصیلات",
-  complaintPlaceholder: "مسئلہ بیان کریں (وقت، دباؤ، مقام وغیرہ)۔",
-  arrivalTime: "آمد کا وقت",
-  durationMinutes: "مدت (منٹ)",
-  pressure: "دباؤ",
-  selectPressure: "دباؤ منتخب کریں",
-  pressureLow: "کم",
-  pressureMedium: "درمیانہ",
-  pressureHigh: "زیادہ",
+  complaintPlaceholder: "مسئلہ بیان کریں (کیا ہوا، کہاں، کب، وغیرہ)۔",
   uploadImage: "تصویر اپ لوڈ کریں",
   submit: "شکایت جمع کرائیں",
   submitting: "جمع ہو رہا ہے…",
   success: "شکایت کامیابی سے جمع ہو گئی۔",
   errors: {
     incomplete:
-      "براہ کرم تمام فیلڈز مکمل کریں: دباؤ، آمد کا وقت، مدت، تصویر اور شکایت کی تفصیلات۔",
+      "براہ کرم شکایت کی تفصیلات، تصویر، نام، فون اور ٹینک مکمل کریں۔",
     issueRequired: "شکایت کی تفصیلات ضروری ہیں۔",
-    durationInvalid: "مدت ایک درست غیر منفی عدد ہونی چاہیے۔",
     submitFailed: "شکایت جمع نہیں ہو سکی۔",
     imageUrl: "اپ لوڈ کے بعد تصویر کا URL نہ مل سکا۔",
   },

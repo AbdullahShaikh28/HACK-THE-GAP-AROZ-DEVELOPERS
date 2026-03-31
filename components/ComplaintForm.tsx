@@ -1,9 +1,14 @@
 "use client";
 
 import { useMemo, useState } from "react";
+import { PhotoCaptureInput } from "@/components/PhotoCaptureInput";
 import { createClient } from "@/lib/supabase/client";
+import { fetchIssueLabelFromImage } from "@/lib/client-vision";
 import { complaintFormT } from "@/lib/complaint-form-i18n";
+import { computeLocationCheck, getPhotoMaxDistanceM } from "@/lib/geo";
+import type { PhotoCaptureValue } from "@/lib/photo-capture-types";
 import { FORM_LANGUAGE_OPTIONS } from "@/lib/form-language-options";
+import { enrichGpsFromServerExif } from "@/lib/enrich-photo-gps";
 import { tankDropdownLabel } from "@/lib/whatsapp-tank-lines";
 import type { ChatLanguage } from "@/types";
 
@@ -13,6 +18,8 @@ type TankOption = {
   id: number;
   name: string;
   ward: string;
+  latitude: number;
+  longitude: number;
 };
 
 type ComplaintFormProps = {
@@ -37,10 +44,7 @@ export function ComplaintForm({
     initialTankId ? String(initialTankId) : tanks[0] ? String(tanks[0].id) : "",
   );
   const [issue, setIssue] = useState("");
-  const [arrivalTime, setArrivalTime] = useState("");
-  const [durationMinutes, setDurationMinutes] = useState("");
-  const [pressureLevel, setPressureLevel] = useState<"" | "low" | "medium" | "high">("");
-  const [imageFile, setImageFile] = useState<File | null>(null);
+  const [photo, setPhoto] = useState<PhotoCaptureValue | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [message, setMessage] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -54,14 +58,41 @@ export function ComplaintForm({
     setMessage(null);
     setError(null);
 
-    if (!pressureLevel || !arrivalTime.trim() || durationMinutes === "" || !imageFile) {
+    if (!photo?.file) {
       setError(copy.errors.incomplete);
       setIsSubmitting(false);
       return;
     }
 
+    const imageFile = photo.file;
+
     try {
       const supabase = createClient();
+
+      const vision = await fetchIssueLabelFromImage(imageFile);
+
+      let photoLat = photo.latitude;
+      let photoLon = photo.longitude;
+      let photoAcc = photo.accuracyM;
+      if (photoLat == null || photoLon == null) {
+        const ex = await enrichGpsFromServerExif(imageFile);
+        if (ex.latitude != null && ex.longitude != null) {
+          photoLat = ex.latitude;
+          photoLon = ex.longitude;
+        }
+      }
+
+      const selectedTank = tanks.find((t) => t.id === Number(tankId));
+      const maxM = getPhotoMaxDistanceM();
+      const loc = selectedTank
+        ? computeLocationCheck(
+            photoLat,
+            photoLon,
+            selectedTank.latitude,
+            selectedTank.longitude,
+            maxM,
+          )
+        : { distanceM: null as number | null, status: "unavailable" as const };
 
       const extension = imageFile.name.split(".").pop() ?? "jpg";
       const filePath = `complaints/${Date.now()}-${Math.random().toString(36).slice(2)}.${extension}`;
@@ -97,30 +128,64 @@ export function ComplaintForm({
         throw new Error(copy.errors.issueRequired);
       }
 
-      const duration = Number(durationMinutes);
-      if (Number.isNaN(duration) || duration < 0) {
-        throw new Error(copy.errors.durationInvalid);
+      /** Base row — works with minimal `complaints` table (see sql/complaints.sql). */
+      const minimal: Record<string, unknown> = {
+        name,
+        phone_number: phoneNumber,
+        tank_id: Number(tankId),
+        issue: issueText,
+        report_channel: initialChannel,
+        source_phone: phoneNumber,
+        report_type: "complaint",
+        image_url: imageUrl,
+      };
+
+      const withLang: Record<string, unknown> = { ...minimal, language: formLang };
+
+      const withPhotoGeo: Record<string, unknown> = {
+        ...withLang,
+        photo_latitude: photoLat,
+        photo_longitude: photoLon,
+        photo_location_accuracy_m: photoAcc,
+        distance_to_tank_m: loc.distanceM,
+        location_check_status: loc.status,
+      };
+
+      const withAi: Record<string, unknown> = {
+        ...withPhotoGeo,
+        ai_issue_label: vision.label,
+        ai_issue_raw: vision.raw,
+        ai_analyzed_at: vision.analyzedAt,
+      };
+
+      /**
+       * Try richest payload first. If PostgREST reports unknown columns (migrations not applied),
+       * fall back so submission still works on older schemas. Does not send `capture_address`
+       * from the client — add sql/cei_capture_address.sql when the column exists.
+       */
+      const attempts = [withAi, withPhotoGeo, withLang, minimal];
+
+      let lastMessage = "";
+      for (const payload of attempts) {
+        const { error: insertError } = await (supabase as any).from("complaints").insert(payload);
+        if (!insertError) {
+          lastMessage = "";
+          break;
+        }
+        const msg = [insertError.message, insertError.details, insertError.hint]
+          .filter(Boolean)
+          .join(" ");
+        lastMessage = msg || insertError.message || "Insert failed";
+        const missingColumn =
+          /could not find|schema cache|column|unknown|does not exist|PGRST204/i.test(
+            lastMessage,
+          );
+        if (!missingColumn) {
+          throw new Error(lastMessage);
+        }
       }
-
-      const { error: insertError } = await (supabase as any)
-        .from("complaints")
-        .insert({
-          name,
-          phone_number: phoneNumber,
-          tank_id: Number(tankId),
-          issue: issueText,
-          arrival_time: arrivalTime,
-          duration_minutes: duration,
-          pressure_level: pressureLevel,
-          report_channel: initialChannel,
-          source_phone: phoneNumber,
-          report_type: "complaint",
-          image_url: imageUrl,
-          language: formLang,
-        });
-
-      if (insertError) {
-        throw new Error(insertError.message);
+      if (lastMessage) {
+        throw new Error(lastMessage);
       }
 
       await (supabase as any).from("tank_contacts").upsert(
@@ -137,10 +202,8 @@ export function ComplaintForm({
       setName("");
       setPhoneNumber("");
       setIssue("");
-      setArrivalTime("");
-      setDurationMinutes("");
-      setPressureLevel("");
-      setImageFile(null);
+      if (photo?.previewUrl) URL.revokeObjectURL(photo.previewUrl);
+      setPhoto(null);
       if (initialPhoneNumber) setPhoneNumber(initialPhoneNumber);
       if (initialTankId) setTankId(String(initialTankId));
       else if (tanks[0]) setTankId(String(tanks[0].id));
@@ -260,71 +323,17 @@ export function ComplaintForm({
         />
       </div>
 
-      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-        <div className="space-y-1">
-          <label htmlFor="cf_arrival" className="text-sm font-medium text-[#1a2535]">
-            {t.arrivalTime}
-          </label>
-          <input
-            id="cf_arrival"
-            type="time"
-            value={arrivalTime}
-            onChange={(event) => setArrivalTime(event.target.value)}
-            className="h-10 w-full rounded-lg border border-[#dce4ef] px-3 text-sm outline-none focus:border-[#1a3a6e]"
-            required
-          />
-        </div>
-        <div className="space-y-1">
-          <label htmlFor="cf_duration" className="text-sm font-medium text-[#1a2535]">
-            {t.durationMinutes}
-          </label>
-          <input
-            id="cf_duration"
-            type="number"
-            min={0}
-            step={1}
-            value={durationMinutes}
-            onChange={(event) => setDurationMinutes(event.target.value)}
-            className="h-10 w-full rounded-lg border border-[#dce4ef] px-3 text-sm outline-none focus:border-[#1a3a6e]"
-            required
-          />
-        </div>
-        <div className="space-y-1">
-          <label htmlFor="cf_pressure" className="text-sm font-medium text-[#1a2535]">
-            {t.pressure}
-          </label>
-          <select
-            id="cf_pressure"
-            value={pressureLevel}
-            onChange={(event) =>
-              setPressureLevel(event.target.value as "" | "low" | "medium" | "high")
-            }
-            className="h-10 w-full rounded-lg border border-[#dce4ef] px-3 text-sm outline-none focus:border-[#1a3a6e]"
-            required
-          >
-            <option value="" disabled>
-              {t.selectPressure}
-            </option>
-            <option value="low">{t.pressureLow}</option>
-            <option value="medium">{t.pressureMedium}</option>
-            <option value="high">{t.pressureHigh}</option>
-          </select>
-        </div>
-      </div>
-
-      <div className="space-y-1">
-        <label htmlFor="cf_image" className="text-sm font-medium text-[#1a2535]">
-          {t.uploadImage}
-        </label>
-        <input
-          id="cf_image"
-          type="file"
-          accept="image/*"
-          required
-          onChange={(event) => setImageFile(event.target.files?.[0] ?? null)}
-          className="block w-full text-sm text-[#1a2535]"
-        />
-      </div>
+      <PhotoCaptureInput
+        id="cf_image"
+        label={t.uploadImage}
+        required
+        value={photo}
+        onChange={(next) => {
+          if (photo?.previewUrl) URL.revokeObjectURL(photo.previewUrl);
+          setPhoto(next);
+        }}
+        hint={`Proximity check: photo location must be within ${getPhotoMaxDistanceM()} m of the selected tank (centroid). Allow browser location when prompted for best results.`}
+      />
 
       {error ? <p className="text-sm text-red-600">{error}</p> : null}
       {message ? <p className="text-sm text-emerald-600">{message}</p> : null}

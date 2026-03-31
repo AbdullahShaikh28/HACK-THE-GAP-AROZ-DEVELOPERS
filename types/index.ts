@@ -102,6 +102,15 @@ export type Database = {
           status: "open" | "in_progress" | "resolved" | "rejected";
           priority: "low" | "medium" | "high";
           language: "en" | "hi" | "mr" | "ur" | null;
+          photo_latitude: number | null;
+          photo_longitude: number | null;
+          photo_location_accuracy_m: number | null;
+          distance_to_tank_m: number | null;
+          location_check_status: "pass" | "fail" | "unavailable" | null;
+          capture_address: string | null;
+          ai_issue_label: string | null;
+          ai_issue_raw: Json | null;
+          ai_analyzed_at: string | null;
           created_at: string;
         };
         Insert: {
@@ -121,6 +130,15 @@ export type Database = {
           status?: "open" | "in_progress" | "resolved" | "rejected";
           priority?: "low" | "medium" | "high";
           language?: "en" | "hi" | "mr" | "ur" | null;
+          photo_latitude?: number | null;
+          photo_longitude?: number | null;
+          photo_location_accuracy_m?: number | null;
+          distance_to_tank_m?: number | null;
+          location_check_status?: "pass" | "fail" | "unavailable" | null;
+          capture_address?: string | null;
+          ai_issue_label?: string | null;
+          ai_issue_raw?: Json | null;
+          ai_analyzed_at?: string | null;
           created_at?: string;
         };
         Update: {
@@ -140,6 +158,15 @@ export type Database = {
           status?: "open" | "in_progress" | "resolved" | "rejected";
           priority?: "low" | "medium" | "high";
           language?: "en" | "hi" | "mr" | "ur" | null;
+          photo_latitude?: number | null;
+          photo_longitude?: number | null;
+          photo_location_accuracy_m?: number | null;
+          distance_to_tank_m?: number | null;
+          location_check_status?: "pass" | "fail" | "unavailable" | null;
+          capture_address?: string | null;
+          ai_issue_label?: string | null;
+          ai_issue_raw?: Json | null;
+          ai_analyzed_at?: string | null;
           created_at?: string;
         };
         Relationships: [];
@@ -161,6 +188,15 @@ export type Database = {
           report_channel: "web" | "whatsapp" | null;
           language: "en" | "hi" | "mr" | "ur" | null;
           zone_number: number | null;
+          photo_latitude: number | null;
+          photo_longitude: number | null;
+          photo_location_accuracy_m: number | null;
+          distance_to_tank_m: number | null;
+          location_check_status: "pass" | "fail" | "unavailable" | null;
+          capture_address: string | null;
+          ai_issue_label: string | null;
+          ai_issue_raw: Json | null;
+          ai_analyzed_at: string | null;
           created_at: string;
         };
         Insert: {
@@ -179,6 +215,15 @@ export type Database = {
           report_channel?: "web" | "whatsapp" | null;
           language?: "en" | "hi" | "mr" | "ur" | null;
           zone_number?: number | null;
+          photo_latitude?: number | null;
+          photo_longitude?: number | null;
+          photo_location_accuracy_m?: number | null;
+          distance_to_tank_m?: number | null;
+          location_check_status?: "pass" | "fail" | "unavailable" | null;
+          capture_address?: string | null;
+          ai_issue_label?: string | null;
+          ai_issue_raw?: Json | null;
+          ai_analyzed_at?: string | null;
           created_at?: string;
         };
         Update: {
@@ -197,6 +242,15 @@ export type Database = {
           report_channel?: "web" | "whatsapp" | null;
           language?: "en" | "hi" | "mr" | "ur" | null;
           zone_number?: number | null;
+          photo_latitude?: number | null;
+          photo_longitude?: number | null;
+          photo_location_accuracy_m?: number | null;
+          distance_to_tank_m?: number | null;
+          location_check_status?: "pass" | "fail" | "unavailable" | null;
+          capture_address?: string | null;
+          ai_issue_label?: string | null;
+          ai_issue_raw?: Json | null;
+          ai_analyzed_at?: string | null;
           created_at?: string;
         };
         Relationships: [];
@@ -272,6 +326,7 @@ export type Database = {
           step:
             | "awaiting_language"
             | "awaiting_area"
+            | "awaiting_tank"
             | "awaiting_complaint"
             | "completed";
           language: string | null;
@@ -285,6 +340,7 @@ export type Database = {
           step?:
             | "awaiting_language"
             | "awaiting_area"
+            | "awaiting_tank"
             | "awaiting_complaint"
             | "completed";
           language?: string | null;
@@ -298,6 +354,7 @@ export type Database = {
           step?:
             | "awaiting_language"
             | "awaiting_area"
+            | "awaiting_tank"
             | "awaiting_complaint"
             | "completed";
           language?: string | null;

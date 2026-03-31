@@ -1,4 +1,5 @@
 import Link from "next/link";
+import type { HomeScheduledTankRow } from "@/services/valve-schedules";
 
 const publicServices = [
   {
@@ -46,7 +47,16 @@ const publicInsights = [
   },
 ];
 
-export function HomeOverview() {
+function formatStart(dateISO: string, timeHHmmss: string) {
+  const hhmm = timeHHmmss.slice(0, 5);
+  return `${dateISO} · ${hhmm}`;
+}
+
+export function HomeOverview({
+  scheduledRows = [],
+}: {
+  scheduledRows?: HomeScheduledTankRow[];
+}) {
   return (
     <div className="space-y-14 pb-16">
       <section className="relative overflow-hidden bg-[linear-gradient(135deg,#1a3a6e_0%,#1e4d8c_50%,#0f2a52_100%)] px-6 py-12 text-white md:py-14">
@@ -146,6 +156,67 @@ export function HomeOverview() {
             </li>
           ))}
         </ul>
+      </section>
+
+      <section
+        className="mx-auto max-w-[1280px] px-6"
+        aria-labelledby="scheduled-valves-heading"
+      >
+        <div className="mb-6 flex items-end justify-between gap-4">
+          <div>
+            <h2 id="scheduled-valves-heading" className="text-xl font-semibold text-[#1a2535]">
+              Scheduled valve openings
+            </h2>
+            <p className="mt-1 text-sm text-[#6b7a94]">
+              Display-only list from backend-created scheduling records.
+            </p>
+          </div>
+          <Link
+            href="/tanks?tab=scheduled"
+            className="text-sm font-semibold text-[#1a3a6e] hover:underline"
+          >
+            Open scheduled tanks →
+          </Link>
+        </div>
+
+        {scheduledRows.length === 0 ? (
+          <div className="rounded-xl border border-[#dbe3ef] bg-white px-5 py-6 text-sm text-[#6b7a94] shadow-sm">
+            No upcoming backend schedule found for your account.
+          </div>
+        ) : (
+          <ul className="grid gap-4 md:grid-cols-2">
+            {scheduledRows.map((row) => (
+              <li
+                key={`${row.schedule_id}-${row.tank_id}`}
+                className="rounded-xl border border-[#dbe3ef] bg-white p-5 shadow-sm"
+              >
+                <p className="text-[11px] font-bold uppercase tracking-[0.6px] text-[#e8610a]">
+                  {row.tank_type} · {row.ward}
+                </p>
+                <p className="mt-1 text-base font-semibold text-[#1a2535]">{row.tank_name}</p>
+                <p className="mt-2 text-sm text-[#6b7a94]">{row.area_address}</p>
+                <div className="mt-4 grid grid-cols-2 gap-3 text-sm">
+                  <div>
+                    <p className="text-[11px] font-bold uppercase tracking-[0.6px] text-[#6b7a94]">
+                      Opening
+                    </p>
+                    <p className="mt-1 font-semibold text-[#1a3a6e]">
+                      {formatStart(row.schedule_date, row.open_at)}
+                    </p>
+                  </div>
+                  <div>
+                    <p className="text-[11px] font-bold uppercase tracking-[0.6px] text-[#6b7a94]">
+                      Duration
+                    </p>
+                    <p className="mt-1 font-semibold text-[#1a3a6e]">
+                      {row.duration_minutes} min
+                    </p>
+                  </div>
+                </div>
+              </li>
+            ))}
+          </ul>
+        )}
       </section>
 
       <section

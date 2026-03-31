@@ -85,6 +85,8 @@ export function ValveControlPanel({ data }: Props) {
     dailySupplyTimeHHmm,
   } = data;
   const [confirmed, setConfirmed] = React.useState<Record<number, boolean>>({});
+  const [savingZone, setSavingZone] = React.useState<Record<number, boolean>>({});
+  const [persistError, setPersistError] = React.useState<string | null>(null);
 
   const [useManualMain, setUseManualMain] = React.useState(false);
   const [manualMain, setManualMain] = React.useState<ManualMainStored | null>(null);
@@ -168,8 +170,60 @@ export function ValveControlPanel({ data }: Props) {
     });
   }
 
-  function toggleZone(zone: number) {
-    setConfirmed((prev) => ({ ...prev, [zone]: !prev[zone] }));
+  React.useEffect(() => {
+    let cancelled = false;
+    async function loadPersisted() {
+      try {
+        const res = await fetch(`/api/valve-schedules?tankId=${tankId}`, { method: "GET" });
+        if (!res.ok) return;
+        const payload = (await res.json()) as { rows?: Array<{ zone_number: number | null }> };
+        if (cancelled) return;
+        const next: Record<number, boolean> = {};
+        for (const row of payload.rows ?? []) {
+          const z = Number(row.zone_number);
+          if (z >= 1 && z <= 5) next[z] = true;
+        }
+        setConfirmed(next);
+      } catch {
+        // Keep local UI usable even if persisted state cannot be fetched.
+      }
+    }
+    loadPersisted();
+    return () => {
+      cancelled = true;
+    };
+  }, [tankId]);
+
+  async function toggleZone(
+    zone: number,
+    zoneLabel: string,
+    zoneStartIso: string,
+    durationMinutes: number,
+  ) {
+    const isConfirmed = !!confirmed[zone];
+    setPersistError(null);
+    setSavingZone((prev) => ({ ...prev, [zone]: true }));
+    try {
+      const res = await fetch("/api/valve-schedules", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          action: isConfirmed ? "cancel" : "confirm",
+          tankId,
+          zoneNumber: zone,
+          startIso: zoneStartIso,
+          durationMinutes,
+          notes: `${tankName} · ${zoneLabel}`,
+        }),
+      });
+      const payload = (await res.json()) as { error?: string };
+      if (!res.ok) throw new Error(payload.error ?? "Failed to persist valve plan");
+      setConfirmed((prev) => ({ ...prev, [zone]: !isConfirmed }));
+    } catch (e) {
+      setPersistError(e instanceof Error ? e.message : "Could not persist valve plan.");
+    } finally {
+      setSavingZone((prev) => ({ ...prev, [zone]: false }));
+    }
   }
 
   return (
@@ -518,14 +572,17 @@ export function ValveControlPanel({ data }: Props) {
               <div className="mt-4 border-t border-border pt-4">
                 <button
                   type="button"
-                  onClick={() => toggleZone(z.zone)}
+                  onClick={() => toggleZone(z.zone, z.zoneLabel, zoneStartIso, effectiveDur)}
+                  disabled={!!savingZone[z.zone]}
                   className={
                     confirmed[z.zone]
-                      ? "h-10 w-full rounded-lg border border-emerald-300 bg-emerald-50 text-sm font-medium text-emerald-900 transition hover:bg-emerald-100"
-                      : "h-10 w-full rounded-lg bg-primary text-sm font-medium text-primary-foreground transition hover:opacity-90"
+                      ? "h-10 w-full rounded-lg border border-emerald-300 bg-emerald-50 text-sm font-medium text-emerald-900 transition hover:bg-emerald-100 disabled:opacity-60"
+                      : "h-10 w-full rounded-lg bg-primary text-sm font-medium text-primary-foreground transition hover:opacity-90 disabled:opacity-60"
                   }
                 >
-                  {confirmed[z.zone]
+                  {savingZone[z.zone]
+                    ? "Saving..."
+                    : confirmed[z.zone]
                     ? "Marked as scheduled — tap to undo"
                     : `Confirm valve plan for ${z.zoneLabel}`}
                 </button>
@@ -536,10 +593,12 @@ export function ValveControlPanel({ data }: Props) {
       </div>
 
       <p className="text-xs text-muted">
-        Manual plans are saved in this browser only and do not operate physical valves — use SCADA /
-        field process to open valves. Survey context: last {surveyWindowDays} days for{" "}
+        Confirmed plans are persisted to database and shown in Scheduled sections. This does not
+        operate physical valves — use SCADA / field process to open valves. Survey context: last{" "}
+        {surveyWindowDays} days for{" "}
         <span className="font-medium">{tankName}</span>.
       </p>
+      {persistError ? <p className="text-sm text-red-600">{persistError}</p> : null}
     </div>
   );
 }

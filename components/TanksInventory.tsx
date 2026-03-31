@@ -1,13 +1,28 @@
 "use client";
 
+import type { Route } from "next";
+import { usePathname, useRouter } from "next/navigation";
 import { useMemo, useState } from "react";
 import type { WaterTank } from "@/services/tanks";
 
+export type TanksInventoryFilter = "ALL" | WaterTank["type"] | "SCHEDULED";
+type FilterType = TanksInventoryFilter;
+
 type TanksInventoryProps = {
   tanks: WaterTank[];
+  /** From `?tab=` on /tanks (all, esr, gsr, sump, scheduled). */
+  initialFilter?: FilterType;
 };
 
-type FilterType = "ALL" | WaterTank["type"];
+const FILTER_ORDER = ["ALL", "ESR", "GSR", "Sump", "SCHEDULED"] as const;
+
+const FILTER_TO_TAB: Record<FilterType, string> = {
+  ALL: "all",
+  ESR: "esr",
+  GSR: "gsr",
+  Sump: "sump",
+  SCHEDULED: "scheduled",
+};
 
 function badgeColors(type: WaterTank["type"]) {
   if (type === "ESR") {
@@ -74,17 +89,45 @@ function statusForLevel(level: number) {
   };
 }
 
-export function TanksInventory({ tanks }: TanksInventoryProps) {
+function formatScheduledAt(iso: string) {
+  const d = new Date(iso);
+  if (Number.isNaN(d.getTime())) return iso;
+  return d.toLocaleString("en-IN", {
+    year: "numeric",
+    month: "short",
+    day: "numeric",
+    hour: "2-digit",
+    minute: "2-digit",
+  });
+}
+
+export function TanksInventory({
+  tanks,
+  initialFilter = "ALL",
+}: TanksInventoryProps) {
+  const router = useRouter();
+  const pathname = usePathname();
   const [searchQuery, setSearchQuery] = useState("");
-  const [activeFilter, setActiveFilter] = useState<FilterType>("ALL");
+  const [activeFilter, setActiveFilter] = useState<FilterType>(initialFilter);
   const [selectedTank, setSelectedTank] = useState<WaterTank | null>(null);
+
+  function applyFilter(filter: FilterType) {
+    setActiveFilter(filter);
+    const tab = FILTER_TO_TAB[filter];
+    const next = tab === "all" ? pathname : `${pathname}?tab=${tab}`;
+    router.replace(next as Route, { scroll: false });
+  }
 
   const filteredTanks = useMemo(() => {
     const normalizedQuery = searchQuery.trim().toLowerCase();
 
     return tanks.filter((tank) => {
       const matchesFilter =
-        activeFilter === "ALL" ? true : tank.type === activeFilter;
+        activeFilter === "ALL"
+          ? true
+          : activeFilter === "SCHEDULED"
+            ? tank.scheduled
+            : tank.type === activeFilter;
       const matchesQuery =
         normalizedQuery.length === 0
           ? true
@@ -115,14 +158,16 @@ export function TanksInventory({ tanks }: TanksInventoryProps) {
           placeholder="Search tank name, ward, or area..."
           className="min-w-[220px] flex-1 rounded-lg border-[1.5px] border-[#dce4ef] bg-white px-4 py-2.5 text-[13px] text-[#1a2535] outline-none transition focus:border-[#2563a8]"
         />
-        {(["ALL", "ESR", "GSR", "Sump"] as const).map((filter) => {
+        {FILTER_ORDER.map((filter) => {
           const isActive = activeFilter === filter;
+          const label =
+            filter === "SCHEDULED" ? "Scheduled" : filter;
 
           return (
             <button
               key={filter}
               type="button"
-              onClick={() => setActiveFilter(filter)}
+              onClick={() => applyFilter(filter)}
               className={[
                 "rounded-lg border-[1.5px] px-4 py-2.5 text-[12.5px] font-semibold transition",
                 isActive
@@ -130,7 +175,7 @@ export function TanksInventory({ tanks }: TanksInventoryProps) {
                   : "border-[#dce4ef] bg-white text-[#1a2535] hover:border-[#1a3a6e] hover:text-[#1a3a6e]",
               ].join(" ")}
             >
-              {filter}
+              {label}
             </button>
           );
         })}
@@ -139,7 +184,9 @@ export function TanksInventory({ tanks }: TanksInventoryProps) {
       <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
         {filteredTanks.length === 0 ? (
           <div className="col-span-full rounded-xl border border-[#dce4ef] bg-white px-6 py-10 text-center text-sm text-[#6b7a94] shadow-[0_2px_8px_rgba(26,58,110,0.10)]">
-            No tanks found matching your search.
+            {activeFilter === "SCHEDULED"
+              ? "No tanks are listed as scheduled in the directory yet."
+              : "No tanks found matching your search."}
           </div>
         ) : null}
 
@@ -171,6 +218,11 @@ export function TanksInventory({ tanks }: TanksInventoryProps) {
             <p className="mb-4 text-[11px] font-medium text-[#6b7a94]">
               {tank.ward}
             </p>
+            {tank.nextScheduledAtIso ? (
+              <p className="mb-4 rounded-md border border-[#f5c28d] bg-[#fff4e8] px-2.5 py-1.5 text-[10.5px] font-semibold text-[#b85800]">
+                Next scheduled: {formatScheduledAt(tank.nextScheduledAtIso)}
+              </p>
+            ) : null}
 
             <div className="grid grid-cols-2 gap-3">
               <div>
