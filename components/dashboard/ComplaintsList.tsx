@@ -34,6 +34,8 @@ type ComplaintItem = {
   status: "open" | "in_progress" | "resolved" | "rejected";
   priority: "low" | "medium" | "high";
   created_at: string;
+  updated_at: string | null;
+  closed_at: string | null;
   photo_latitude: number | null;
   photo_longitude: number | null;
   photo_location_accuracy_m: number | null;
@@ -101,6 +103,8 @@ function normalizeComplaintRow(r: Record<string, unknown>): ComplaintItem {
     status,
     priority,
     created_at: String(r.created_at ?? ""),
+    updated_at: r.updated_at != null ? String(r.updated_at) : null,
+    closed_at: r.closed_at != null ? String(r.closed_at) : null,
     photo_latitude: numOrNull(r.photo_latitude),
     photo_longitude: numOrNull(r.photo_longitude),
     photo_location_accuracy_m: numOrNull(r.photo_location_accuracy_m),
@@ -109,6 +113,22 @@ function normalizeComplaintRow(r: Record<string, unknown>): ComplaintItem {
     capture_address,
     ai_issue_label: ail != null && String(ail).trim() ? String(ail).trim() : null,
   };
+}
+
+function formatDateTime(iso: string | null): string {
+  if (!iso) return "—";
+  const d = new Date(iso);
+  if (Number.isNaN(d.getTime())) return iso;
+  return new Intl.DateTimeFormat("en-IN", {
+    year: "numeric",
+    month: "short",
+    day: "2-digit",
+    hour: "2-digit",
+    minute: "2-digit",
+    second: "2-digit",
+    hour12: false,
+    timeZone: "Asia/Kolkata",
+  }).format(d);
 }
 
 function priorityLabel(priority: ComplaintItem["priority"]): string {
@@ -142,6 +162,8 @@ export function ComplaintsList({
   const [editStatus, setEditStatus] = useState<ComplaintItem["status"]>("open");
   const [editPriority, setEditPriority] =
     useState<ComplaintItem["priority"]>("medium");
+  const [sendingClosure, setSendingClosure] = useState<Record<string, boolean>>({});
+  const [closureNotice, setClosureNotice] = useState<string | null>(null);
 
   function openDialog(c: ComplaintItem) {
     setDialogComplaint(c);
@@ -166,6 +188,28 @@ export function ComplaintsList({
     });
   }
 
+  async function sendClosureMessage(complaint: ComplaintItem) {
+    setClosureNotice(null);
+    setSendingClosure((prev) => ({ ...prev, [complaint.id]: true }));
+    try {
+      const res = await fetch("/api/whatsapp/complaint-closed", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ complaintId: complaint.id }),
+      });
+      const payload = (await res.json()) as { error?: string };
+      if (!res.ok) {
+        setClosureNotice(payload.error ?? "Could not send closure message.");
+        return;
+      }
+      setClosureNotice(`Closure WhatsApp sent for complaint #${complaint.id}.`);
+    } catch {
+      setClosureNotice("Network error while sending closure WhatsApp.");
+    } finally {
+      setSendingClosure((prev) => ({ ...prev, [complaint.id]: false }));
+    }
+  }
+
   if (complaints.length === 0) {
     return <p className="text-sm text-muted">No complaints submitted yet.</p>;
   }
@@ -177,11 +221,14 @@ export function ComplaintsList({
           <TableRow>
             <TableHead>Name</TableHead>
             <TableHead>Number</TableHead>
+            <TableHead>Received date</TableHead>
+            <TableHead>Closed date</TableHead>
             <TableHead className="w-[4.5rem]">Photo</TableHead>
             <TableHead className="min-w-[9rem] max-w-[11rem]">Location / review</TableHead>
             <TableHead className="min-w-[12rem] max-w-md">Issue</TableHead>
             <TableHead>Status</TableHead>
             <TableHead>Priority</TableHead>
+            <TableHead>Notify</TableHead>
           </TableRow>
         </TableHeader>
         <TableBody>
@@ -195,6 +242,14 @@ export function ComplaintsList({
               <TableCell className="font-medium">{complaint.name}</TableCell>
               <TableCell className="tabular-nums text-muted-foreground">
                 {complaint.phone_number}
+              </TableCell>
+              <TableCell className="whitespace-nowrap text-xs text-muted-foreground">
+                {formatDateTime(complaint.created_at)}
+              </TableCell>
+              <TableCell className="whitespace-nowrap text-xs text-muted-foreground">
+                {formatDateTime(
+                  complaint.closed_at ?? (complaint.status === "resolved" ? complaint.updated_at : null),
+                )}
               </TableCell>
               <TableCell className="align-middle">
                 {complaint.image_url ? (
@@ -248,10 +303,22 @@ export function ComplaintsList({
               <TableCell className="text-sm text-foreground">
                 {priorityLabel(complaint.priority)}
               </TableCell>
+              <TableCell onClick={(e) => e.stopPropagation()}>
+                <Button
+                  type="button"
+                  size="sm"
+                  className="border-emerald-300 bg-emerald-600 text-white hover:bg-emerald-700"
+                  disabled={complaint.status !== "resolved" || !!sendingClosure[complaint.id]}
+                  onClick={() => void sendClosureMessage(complaint)}
+                >
+                  {sendingClosure[complaint.id] ? "Sending..." : "Send WhatsApp"}
+                </Button>
+              </TableCell>
             </TableRow>
           ))}
         </TableBody>
       </Table>
+      {closureNotice ? <p className="mt-3 text-sm text-muted-foreground">{closureNotice}</p> : null}
 
       <Dialog
         open={dialogComplaint !== null}
@@ -300,6 +367,23 @@ export function ComplaintsList({
               </p>
               <p className="text-sm text-foreground">{dialogComplaint?.issue}</p>
             </div>
+            <div className="grid gap-2 rounded-md border border-border px-3 py-2">
+              <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
+                Dates
+              </p>
+              <p className="text-sm text-foreground">
+                Received: {formatDateTime(dialogComplaint?.created_at ?? null)}
+              </p>
+              <p className="text-sm text-foreground">
+                Closed:{" "}
+                {formatDateTime(
+                  dialogComplaint
+                    ? dialogComplaint.closed_at ??
+                        (dialogComplaint.status === "resolved" ? dialogComplaint.updated_at : null)
+                    : null,
+                )}
+              </p>
+            </div>
             <div className="grid gap-2">
               <label htmlFor="complaint-status" className="text-sm font-medium">
                 Status
@@ -341,6 +425,23 @@ export function ComplaintsList({
           </div>
 
           <DialogFooter className="shrink-0 border-t border-border pt-4">
+            <Button
+              type="button"
+              className="border-emerald-300 bg-emerald-600 text-white hover:bg-emerald-700"
+              disabled={
+                !dialogComplaint ||
+                dialogComplaint.status !== "resolved" ||
+                !!(dialogComplaint && sendingClosure[dialogComplaint.id])
+              }
+              onClick={() => {
+                if (!dialogComplaint) return;
+                void sendClosureMessage(dialogComplaint);
+              }}
+            >
+              {dialogComplaint && sendingClosure[dialogComplaint.id]
+                ? "Sending..."
+                : "Send closure WhatsApp"}
+            </Button>
             <Button
               type="button"
               variant="outline"

@@ -28,10 +28,30 @@ export default async function ComplaintsPage() {
     }
 
     const serverSupabase = await createClient();
-    await (serverSupabase as any)
+    const nowIso = new Date().toISOString();
+    const updatePayload: Record<string, unknown> = {
+      status,
+      priority,
+      closed_at: status === "resolved" ? nowIso : null,
+    };
+
+    const { error } = await (serverSupabase as any)
       .from("complaints")
-      .update({ status, priority })
+      .update(updatePayload)
       .eq("id", complaintId);
+
+    if (error) {
+      const msg = [error.message, error.details, error.hint].filter(Boolean).join(" ");
+      const missingClosedAt =
+        /could not find|schema cache|column|unknown|does not exist|PGRST204/i.test(msg) &&
+        /closed_at/i.test(msg);
+      if (missingClosedAt) {
+        await (serverSupabase as any)
+          .from("complaints")
+          .update({ status, priority })
+          .eq("id", complaintId);
+      }
+    }
 
     revalidatePath("/dashboard");
     revalidatePath("/dashboard/complaints");

@@ -86,45 +86,75 @@ export function SupplyReportForm({
         throw new Error(copy.errors.durationInvalid);
       }
 
-      const { error: insertError } = await (supabase as any)
-        .from("field_surveys")
-        .insert({
-          respondent_name: name,
-          phone_number: phoneNumber,
-          tank_id: Number(tankId),
-          survey_date: arrivalDate.trim(),
-          arrival_time: arrivalTime,
-          duration_minutes: duration,
-          pressure_level: pressureLevel,
-          notes: notesText,
-          image_url: null,
-          submission_kind: "supply_report",
-          report_channel: initialChannel,
-          language: formLang,
-          photo_latitude: null,
-          photo_longitude: null,
-          photo_location_accuracy_m: null,
-          distance_to_tank_m: loc.distanceM,
-          location_check_status: loc.status,
-          capture_address: null,
-          ai_issue_label: null,
-          ai_issue_raw: null,
-          ai_analyzed_at: null,
-        });
+      const minimalSurvey: Record<string, unknown> = {
+        respondent_name: name,
+        phone_number: phoneNumber,
+        tank_id: Number(tankId),
+        survey_date: arrivalDate.trim(),
+        arrival_time: arrivalTime,
+        duration_minutes: duration,
+        pressure_level: pressureLevel,
+      };
 
-      if (insertError) {
-        throw new Error(insertError.message);
+      const withSupplyFields: Record<string, unknown> = {
+        ...minimalSurvey,
+        notes: notesText,
+        submission_kind: "supply_report",
+        report_channel: initialChannel,
+      };
+
+      const withLang: Record<string, unknown> = {
+        ...withSupplyFields,
+        language: formLang,
+      };
+
+      const withLocationCheck: Record<string, unknown> = {
+        ...withLang,
+        ...(loc.status ? { location_check_status: loc.status } : {}),
+        ...(loc.distanceM != null ? { distance_to_tank_m: loc.distanceM } : {}),
+      };
+
+      const attempts = [withLocationCheck, withLang, withSupplyFields, minimalSurvey];
+
+      let lastMessage = "";
+      for (const payload of attempts) {
+        const { error: insertError } = await (supabase as any)
+          .from("field_surveys")
+          .insert(payload);
+        if (!insertError) {
+          lastMessage = "";
+          break;
+        }
+        const msg = [insertError.message, insertError.details, insertError.hint]
+          .filter(Boolean)
+          .join(" ");
+        lastMessage = msg || insertError.message || "Insert failed";
+        const missingColumn =
+          /could not find|schema cache|column|unknown|does not exist|PGRST204/i.test(
+            lastMessage,
+          );
+        if (!missingColumn) {
+          throw new Error(lastMessage);
+        }
       }
 
-      await (supabase as any).from("tank_contacts").upsert(
-        {
-          tank_id: Number(tankId),
-          name,
-          phone_number: phoneNumber,
-          source: "supply_report",
-        },
-        { onConflict: "tank_id,phone_number" },
-      );
+      if (lastMessage) {
+        throw new Error(lastMessage);
+      }
+
+      try {
+        await (supabase as any).from("tank_contacts").upsert(
+          {
+            tank_id: Number(tankId),
+            name,
+            phone_number: phoneNumber,
+            source: "supply_report",
+          },
+          { onConflict: "tank_id,phone_number" },
+        );
+      } catch {
+        // Non-blocking: contact provenance is best-effort
+      }
 
       setMessage(supplyReportT(formLang).success);
       setName("");

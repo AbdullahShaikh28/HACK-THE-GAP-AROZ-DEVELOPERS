@@ -1,1 +1,1 @@
-self.__REACT_LOADABLE_MANIFEST="{\"components/tanks/TanksMapHeatmapDynamic.tsx -> ./TanksMapHeatmap\":{\"id\":\"components/tanks/TanksMapHeatmapDynamic.tsx -> ./TanksMapHeatmap\",\"files\":[\"static/css/_app-pages-browser_components_tanks_TanksMapHeatmap_tsx.css\",\"static/chunks/_app-pages-browser_components_tanks_TanksMapHeatmap_tsx.js\"]}}"
+self.__REACT_LOADABLE_MANIFEST="{}"

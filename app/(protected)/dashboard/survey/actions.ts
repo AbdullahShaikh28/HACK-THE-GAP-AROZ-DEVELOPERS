@@ -187,7 +187,7 @@ export async function submitFieldSurvey(formData: FormData): Promise<
     }
   }
 
-  const { error: insertError } = await (supabase as any).from("field_surveys").insert({
+  const basePayload: Record<string, unknown> = {
     tank_id: tankId,
     submitted_by: user.id,
     respondent_name,
@@ -196,23 +196,61 @@ export async function submitFieldSurvey(formData: FormData): Promise<
     arrival_time,
     duration_minutes,
     pressure_level,
+  };
+
+  const withSubKind: Record<string, unknown> = {
+    ...basePayload,
     zone_number,
     submission_kind: "field_survey",
     report_channel: "web",
     image_url: imageUrl,
+  };
+
+  const withGeo: Record<string, unknown> = {
+    ...withSubKind,
     photo_latitude: photoLat,
     photo_longitude: photoLon,
     photo_location_accuracy_m: photoAcc,
     distance_to_tank_m: loc.distanceM,
     location_check_status: loc.status,
-    capture_address,
+  };
+
+  const withAi: Record<string, unknown> = {
+    ...withGeo,
     ai_issue_label: vision.label,
     ai_issue_raw: vision.raw,
     ai_analyzed_at: vision.analyzedAt,
-  });
+  };
 
-  if (insertError) {
-    return { ok: false, error: insertError.message };
+  const fullPayload: Record<string, unknown> = {
+    ...withAi,
+    ...(capture_address ? { capture_address } : {}),
+  };
+
+  const attempts = [fullPayload, withAi, withGeo, withSubKind, basePayload];
+
+  let lastMessage = "";
+  for (const payload of attempts) {
+    const { error: insertError } = await (supabase as any).from("field_surveys").insert(payload);
+    if (!insertError) {
+      lastMessage = "";
+      break;
+    }
+    const msg = [insertError.message, insertError.details, insertError.hint]
+      .filter(Boolean)
+      .join(" ");
+    lastMessage = msg || insertError.message || "Insert failed";
+    const missingColumn =
+      /could not find|schema cache|column|unknown|does not exist|PGRST204/i.test(
+        lastMessage,
+      );
+    if (!missingColumn) {
+      return { ok: false, error: lastMessage };
+    }
+  }
+
+  if (lastMessage) {
+    return { ok: false, error: lastMessage };
   }
 
   await (supabase as any).from("tank_contacts").upsert(

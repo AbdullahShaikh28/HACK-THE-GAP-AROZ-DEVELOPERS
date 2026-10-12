@@ -21,6 +21,71 @@ function inferTankIdFromBody(body: string) {
   return Number.isNaN(value) ? null : value;
 }
 
+function isTankerBookingIntent(body: string) {
+  const text = body.toLowerCase();
+  return (
+    text.includes("tanker") ||
+    text.includes("booking") ||
+    text.includes("book tanker") ||
+    text.includes("water tanker")
+  );
+}
+
+function parseBookingDateTime(body: string): { supplyDate: string; supplyTime: string } | null {
+  function isValidCalendarDate(y: number, m: number, d: number) {
+    if (m < 1 || m > 12 || d < 1 || d > 31) return false;
+    const dt = new Date(y, m - 1, d);
+    return dt.getFullYear() === y && dt.getMonth() === m - 1 && dt.getDate() === d;
+  }
+
+  const text = body.trim();
+  if (!text) return null;
+
+  const ymd = text.match(/(20\d{2})[-\/](\d{1,2})[-\/](\d{1,2})[,\s]+(\d{1,2}):(\d{2})/);
+  if (ymd) {
+    const y = Number(ymd[1]);
+    const m = Number(ymd[2]);
+    const d = Number(ymd[3]);
+    const hh = Number(ymd[4]);
+    const mm = Number(ymd[5]);
+    if (
+      isValidCalendarDate(y, m, d) &&
+      hh >= 0 &&
+      hh <= 23 &&
+      mm >= 0 &&
+      mm <= 59
+    ) {
+      return {
+        supplyDate: `${String(y).padStart(4, "0")}-${String(m).padStart(2, "0")}-${String(d).padStart(2, "0")}`,
+        supplyTime: `${String(hh).padStart(2, "0")}:${String(mm).padStart(2, "0")}:00`,
+      };
+    }
+  }
+
+  const dmy = text.match(/(\d{1,2})[-\/](\d{1,2})[-\/](20\d{2})[,\s]+(\d{1,2}):(\d{2})/);
+  if (dmy) {
+    const d = Number(dmy[1]);
+    const m = Number(dmy[2]);
+    const y = Number(dmy[3]);
+    const hh = Number(dmy[4]);
+    const mm = Number(dmy[5]);
+    if (
+      isValidCalendarDate(y, m, d) &&
+      hh >= 0 &&
+      hh <= 23 &&
+      mm >= 0 &&
+      mm <= 59
+    ) {
+      return {
+        supplyDate: `${String(y).padStart(4, "0")}-${String(m).padStart(2, "0")}-${String(d).padStart(2, "0")}`,
+        supplyTime: `${String(hh).padStart(2, "0")}:${String(mm).padStart(2, "0")}:00`,
+      };
+    }
+  }
+
+  return null;
+}
+
 async function sendWhatsappMessages(
   client: ReturnType<typeof twilio>,
   from: string,
@@ -127,6 +192,7 @@ export async function POST(request: Request) {
 
       const langChoice = parseLanguageReply(messageBody);
       const greeting = isGreetingOrStart(messageBody);
+      const tankerIntent = isTankerBookingIntent(messageBody);
 
       const client = twilio(accountSid, authToken);
       const outboundBodies: string[] = [];
@@ -164,6 +230,163 @@ export async function POST(request: Request) {
         const menu =
           `${t("en").languageMenuTitle}\n\n${t("en").languageMenuHint}`;
         outboundBodies.push(menu);
+        if (sourceWhatsappAddress && outboundBodies.length) {
+          await sendWhatsappMessages(client, fromNumber, sourceWhatsappAddress, outboundBodies);
+        }
+        return NextResponse.json({ ok: true });
+      }
+
+      /**
+       * Tanker booking flow should take precedence over language/tank complaint flow.
+       * This prevents date/time replies from being treated as tank-selection messages.
+       */
+      if (sessionStep === "awaiting_tanker_booking_datetime") {
+        const booking = parseBookingDateTime(messageBody);
+        if (!booking) {
+          outboundBodies.push(
+            "Invalid date/time. Please send in format: YYYY-MM-DD HH:MM (example: 2026-04-02 10:30).",
+          );
+          if (sourceWhatsappAddress && outboundBodies.length) {
+            await sendWhatsappMessages(client, fromNumber, sourceWhatsappAddress, outboundBodies);
+          }
+          return NextResponse.json({ ok: true });
+        }
+
+        const tankerTankId =
+          typeof existingSession?.tank_id === "number" && Number.isFinite(existingSession.tank_id)
+            ? existingSession.tank_id
+            : resolvedTankId;
+
+        const { error: tankerInsertError } = await (supabase as any).from("tanker_requests").insert({
+          tank_id: tankerTankId,
+          requester_name: "WhatsApp User",
+          vehicle_number: "WA-BOOKING",
+          phone_number: sourcePhone,
+          address: "From WhatsApp booking",
+          supply_date: booking.supplyDate,
+          supply_time: booking.supplyTime,
+          payment_status: "cod",
+          source: "whatsapp_booking",
+        });
+
+        if (tankerInsertError) {
+          outboundBodies.push(
+            "Could not save tanker booking right now. Please try again in a moment.",
+          );
+          if (sourceWhatsappAddress && outboundBodies.length) {
+            await sendWhatsappMessages(client, fromNumber, sourceWhatsappAddress, outboundBodies);
+          }
+          return NextResponse.json({ ok: true });
+        }
+
+        await (supabase as any).from("whatsapp_sessions").upsert(
+          {
+            phone_number: sourcePhone,
+            tank_id: tankerTankId,
+            selected_area_id: null,
+            step: "completed",
+            language: sessionLang ?? "en",
+            last_inbound_message_sid: messageSid,
+            updated_at: new Date().toISOString(),
+          },
+          { onConflict: "phone_number" },
+        );
+
+        outboundBodies.push(
+          `Your tanker booking is registered for ${booking.supplyDate} ${booking.supplyTime.slice(0, 5)}.`,
+        );
+        if (sourceWhatsappAddress && outboundBodies.length) {
+          await sendWhatsappMessages(client, fromNumber, sourceWhatsappAddress, outboundBodies);
+        }
+        return NextResponse.json({ ok: true });
+      }
+
+      if (tankerIntent) {
+        const bookingLang: WhatsAppLang =
+          sessionLang && ["hi", "mr", "ur", "en"].includes(sessionLang) ? sessionLang : "en";
+        const tankerSessionRes = await (supabase as any).from("whatsapp_sessions").upsert(
+          {
+            phone_number: sourcePhone,
+            tank_id: resolvedTankId,
+            selected_area_id: null,
+            step: "awaiting_tanker_tank",
+            language: bookingLang,
+            last_inbound_message_sid: messageSid,
+            updated_at: new Date().toISOString(),
+          },
+          { onConflict: "phone_number" },
+        );
+        if (tankerSessionRes?.error) {
+          outboundBodies.push(
+            "Tanker booking flow is not enabled on database yet. Please ask admin to run SQL migration for WhatsApp tanker steps.",
+          );
+          if (sourceWhatsappAddress && outboundBodies.length) {
+            await sendWhatsappMessages(client, fromNumber, sourceWhatsappAddress, outboundBodies);
+          }
+          return NextResponse.json({ ok: true });
+        }
+        const tankLines = formatTankListLines(allTanks, bookingLang);
+        const tankChunks = appendSuffixToLastChunk(
+          chunkTankMessages("Please choose tank for tanker booking:", "More tanks:", tankLines),
+          "Reply with tank number from the list.",
+        );
+        outboundBodies.push(
+          ...tankChunks,
+        );
+        if (sourceWhatsappAddress && outboundBodies.length) {
+          await sendWhatsappMessages(client, fromNumber, sourceWhatsappAddress, outboundBodies);
+        }
+        return NextResponse.json({ ok: true });
+      }
+
+      if (sessionStep === "awaiting_tanker_tank") {
+        const bookingLang: WhatsAppLang =
+          sessionLang && ["hi", "mr", "ur", "en"].includes(sessionLang) ? sessionLang : "en";
+        const trimmed = messageBody.trim();
+        if (!trimmed || !/^\d+$/.test(trimmed)) {
+          outboundBodies.push("Please reply with tank number from the list.");
+          if (sourceWhatsappAddress && outboundBodies.length) {
+            await sendWhatsappMessages(client, fromNumber, sourceWhatsappAddress, outboundBodies);
+          }
+          return NextResponse.json({ ok: true });
+        }
+        const tankIdReply = Number(trimmed);
+        const selectedTank = allTanks.find((row) => row.id === tankIdReply);
+        if (!selectedTank) {
+          outboundBodies.push("Invalid tank number. Please choose a valid tank from list.");
+          if (sourceWhatsappAddress && outboundBodies.length) {
+            await sendWhatsappMessages(client, fromNumber, sourceWhatsappAddress, outboundBodies);
+          }
+          return NextResponse.json({ ok: true });
+        }
+
+        const stepRes = await (supabase as any).from("whatsapp_sessions").upsert(
+          {
+            phone_number: sourcePhone,
+            tank_id: selectedTank.id,
+            selected_area_id: null,
+            step: "awaiting_tanker_booking_datetime",
+            language: bookingLang,
+            last_inbound_message_sid: messageSid,
+            updated_at: new Date().toISOString(),
+          },
+          { onConflict: "phone_number" },
+        );
+        if (stepRes?.error) {
+          outboundBodies.push("Could not continue tanker booking right now. Please try again.");
+          if (sourceWhatsappAddress && outboundBodies.length) {
+            await sendWhatsappMessages(client, fromNumber, sourceWhatsappAddress, outboundBodies);
+          }
+          return NextResponse.json({ ok: true });
+        }
+
+        const areaLabel = tankDropdownLabel(
+          { id: selectedTank.id, name: selectedTank.name, ward: selectedTank.ward },
+          bookingLang,
+        );
+        outboundBodies.push(
+          `Tank selected: ${areaLabel}\nPlease share required date and time in format: YYYY-MM-DD HH:MM`,
+        );
         if (sourceWhatsappAddress && outboundBodies.length) {
           await sendWhatsappMessages(client, fromNumber, sourceWhatsappAddress, outboundBodies);
         }

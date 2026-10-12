@@ -253,6 +253,17 @@ function IconAlerts() {
   );
 }
 
+function IconTanker() {
+  return (
+    <svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden>
+      <rect x="1" y="6" width="8.5" height="4.5" rx="1" stroke="currentColor" strokeWidth="1.3" />
+      <path d="M9.5 7h2.7l1.8 1.9v1.6h-4.5z" stroke="currentColor" strokeWidth="1.3" fill="none" />
+      <circle cx="4" cy="11.8" r="1.2" stroke="currentColor" strokeWidth="1.2" />
+      <circle cx="11.6" cy="11.8" r="1.2" stroke="currentColor" strokeWidth="1.2" />
+    </svg>
+  );
+}
+
 function ChevronDown() {
   return (
     <svg className="ds-chevron" viewBox="0 0 12 12" fill="none" aria-hidden>
@@ -361,6 +372,8 @@ export function AppSidebar() {
   const analyticsActive =
     pathname === "/dashboard/analytics" ||
     pathname.startsWith("/dashboard/analytics/");
+  const tankersActive =
+    pathname === "/dashboard/tankers" || pathname.startsWith("/dashboard/tankers/");
   const analyticsTab = searchParams.get("tab");
 
   return (
@@ -467,6 +480,17 @@ export function AppSidebar() {
               </SidebarMenuItem>
 
               <SidebarMenuItem>
+                <SidebarMenuButton asChild isActive={tankersActive} tooltip="Tankers">
+                  <Link href="/dashboard/tankers">
+                    <span className="ds-menu-icon">
+                      <IconTanker />
+                    </span>
+                    <span className="ds-menu-label">Tankers</span>
+                  </Link>
+                </SidebarMenuButton>
+              </SidebarMenuItem>
+
+              <SidebarMenuItem>
                 <SidebarMenuButton asChild isActive={mapActive} tooltip="Map View">
                   <Link href="/dashboard/map">
                     <span className="ds-menu-icon">
@@ -554,7 +578,7 @@ export function AppSidebar() {
                     <span className="ds-menu-icon">
                       <IconAlerts />
                     </span>
-                    <span className="ds-menu-label">Complaints</span>
+                    <span className="ds-menu-label">Complaints/Requests</span>
                     <ComplaintsCountBadge />
                     </Link>
                   </SidebarMenuButton>
